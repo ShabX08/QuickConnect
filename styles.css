@@ -1,4 +1,14 @@
-/* General Reset */
+:root {
+    --primary-color: #009579;
+    --secondary-color: #f39c12;
+    --background-color: #f4f7fa;
+    --text-color: #333;
+    --card-bg: #ffffff;
+    --success-color: #2ecc71;
+    --warning-color: #f1c40f;
+    --danger-color: #e74c3c;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,125 +16,281 @@
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #fafafa;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    overflow-x: hidden; /* Prevent horizontal scroll */
-}
-
-/* Main Content Styles */
-.main-content {
-    margin-left: 250px; /* Adjust for the sidebar */
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 40px 20px;
-    background-color: #f4f4f4;
-    height: 100%;
-    animation: fadeIn 1s ease-out;
-}
-
-/* Container for center alignment */
-.container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-grow: 1;
-}
-
-/* Content Box */
-.content {
-    background-color: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 600px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    animation: slideInUp 0.5s ease-out;
-}
-
-.content:hover {
-    transform: scale(1.02);
-}
-
-.content h2 {
-    font-size: 1rem;
-    color: #009579;
-    margin-bottom: 20px;
-    font-weight: 600;
-}
-
-.content p {
-    font-size: 1rem;
-    color: #666;
-    margin-bottom: 25px;
-}
-
-/* Labels Styling */
-label {
-    font-size: 15px;
-    color: #333;
-    display: block;
-    margin-bottom: 8px;
-}
-
-/* Input and Select Fields */
-input[type="email"],
-input[type="text"],
-#dataAmount {
-    padding: 10px;
+    font-family: 'Montserrat', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
     font-size: 14px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    width: 100%;
-    background-color: #fafafa;
-    transition: border-color 0.3s ease, background-color 0.3s ease;
-    margin-bottom: 20px;
-    box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
 }
 
-/* Focused States */
-input:focus,
-#dataAmount:focus {
-    border-color: #009579;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 149, 121, 0.3);
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
-
-/* Pay Now Button */
-#payBtn {
-    background-color: #009579;
+header {
+    background-color: var(--primary-color);
     color: white;
-    padding: 10px 30px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 15px;
+    padding: 0.75rem 0;
+    position: fixed;
     width: 100%;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    background: linear-gradient(145deg, #009579, #00b38e);
-    font-family: poppins;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-#payBtn:hover {
-    background-color: #007a64;
-    transform: translateY(-3px);
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* Styling for the order status (Delivered or Pending) */
-.order-status {
-    padding: 5px 10px;
-    border-radius: 15px; /* Rounded corners */
+.logo a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+}
+
+.nav-links li {
+    margin-left: 1.2rem;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: var(--secondary-color);
+}
+
+.hamburger {
+    display: none;
+    cursor: pointer;
+}
+
+.hamburger .line {
+    width: 25px;
+    height: 2px;
+    background-color: white;
+    margin: 4px 0;
+    transition: all 0.3s ease;
+}
+
+.main-content {
+    margin-top: 60px;
+    padding: 1.5rem 0;
+}
+
+.content {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    color: var(--primary-color);
+    margin-bottom: 1.2rem;
+    font-size: 1.5rem;
+}
+
+.alert {
+    background-color: var(--warning-color);
+    color: var(--text-color);
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1.2rem;
+    font-size: 0.9rem;
+}
+
+label {
+    display: block;
+    margin-top: 0.8rem;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+select, input {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+}
+
+.send-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.send-btn:hover {
+    background-color: #007a63;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    margin: 10% auto;
+    padding: 1.5rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 24px;
     font-weight: bold;
-    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: var(--text-color);
+}
+
+#logoutBtn {
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.order-item {
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    font-size: 0.9rem;
+}
+
+.order-status {
     display: inline-block;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.order-status.processing { background-color: var(--warning-color); }
+.order-status.delivered { background-color: var(--success-color); color: white; }
+
+footer {
+    background-color: var(--primary-color);
+    color: white;
+    text-align: center;
+    padding: 0.8rem 0;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    font-size: 0.8rem;
+}
+
+/* Account Info Layout */
+.account-info {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.8rem;
+    align-items: center;
+}
+
+.account-info i {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+.account-info p {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .hamburger {
+        display: block;
+    }
+
+    .hamburger.active .line:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+
+    .hamburger.active .line:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger.active .line:nth-child(3) {
+        transform: rotate(-45deg) translate(5px, -5px);
+    }
+
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        background-color: var(--primary-color);
+        padding: 1rem;
+    }
+
+    .nav-links.active {
+        display: flex;
+    }
+
+    .nav-links li {
+        margin: 0.5rem 0;
+    }
+
+    .main-content {
+        margin-top: 60px;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+}
+
+.order-status {
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    text-transform: capitalize;
 }
 
 .delivered {
@@ -133,373 +299,21 @@ input:focus,
 }
 
 .pending {
-    background-color: #F44336; /* Red background for Pending */
+    background-color: #FFC107; /* Amber background for Pending */
+    color: #000;
+}
+
+.processing {
+    background-color: #2196F3; /* Blue background for Processing */
     color: white;
 }
 
-/* Highlight new orders with a light green background */
-.new-order {
-    background-color: #e0f7e0; /* Light green background */
-    border-left: 5px solid #4CAF50; /* Green left border to highlight the order */
-    padding: 10px;
-}
-
-.new-order .order-header p,
-.new-order .order-details p,
-.new-order .order-footer p {
-    color: #333; /* Dark text for readability */
-}
-
-/* Optional: Add some padding or margin to the footer to differentiate it */
-.order-footer p {
-    margin-top: 10px;
-    font-size: 14px;
-}
-
-
-/* Modal Styling */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Fixed positioning for the modal overlay */
-    z-index: 1000; /* Ensure it's on top of other content */
-    top: 10%; /* Position the modal from the top */
-    left: 50%; /* Center it horizontally */
-    transform: translateX(-50%); /* Adjust horizontal positioning */
-    width: 90%; /* Modal width */
-    max-width: 400px; /* Max width to make it smaller */
-    height: 400px; /* Fixed height for the modal */
-}
-
-/* Modal content container */
-.modal-content {
-    position: relative;
-    background-color: #fff; /* White background */
-    padding: 20px;
-    border-radius: 8px;
-    height: 100%; /* Take full height of the modal */
-    overflow-y: auto; /* Enable scrolling if content overflows */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow effect */
-    display: flex;
-    flex-direction: column;
-    border: 1px solid gray;
-}
-
-/* Hide the scrollbars visually */
-.modal-content::-webkit-scrollbar {
-    display: none; /* Hides the scrollbar in Webkit browsers (Chrome, Safari) */
-}
-
-.modal-content {
-    -ms-overflow-style: none;  /* Hides scrollbar in IE and Edge */
-    scrollbar-width: none; /* Hides the scrollbar in Firefox */
-}
-
-/* Modal header with title */
-.modal-content h2 {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    color: #333; /* Dark text color */
-    display: flex;
-    align-items: center;
-}
-
-.modal-content h2 i {
-    margin-right: 10px; /* Space between the icon and title */
-    color: #4CAF50; /* Green color for the icon */
-}
-
-/* Styling for paragraphs inside the modal */
-.modal-content p {
-    font-size: 14px;
-    margin: 10px 0;
-    color: #555; /* Lighter text color */
-}
-
-/* Bolded labels inside the modal */
-.modal-content p strong {
-    color: #333; /* Dark text for labels */
-}
-
-/* Style for horizontal lines */
-.modal-content hr {
-    border: none;
-    border-top: 1px solid #eee; /* Light gray line */
-    margin: 15px 0;
-}
-
-/* Close button (X) styling */
-.close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 30px;
-    font-weight: bold;
-    color: #333;
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-.close:hover {
-    color: #FF0000; /* Red color on hover */
-}
-
-/* Logout button styling */
-#logoutBtn {
-    background-color: #009579; /* Green background for the button */
+.cancelled {
+    background-color: #F44336; /* Red background for Cancelled */
     color: white;
-    font-size: 16px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px; /* Rounded corners */
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-top: 15px;
-    width: 100%; /* Full width */
 }
 
-#logoutBtn:hover {
-    background-color: #009579; /* Slightly darker green on hover */
-}
-
-/* Modal fadeIn animation */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Responsive styling for smaller screens */
-@media (max-width: 600px) {
-    .modal {
-        width: 95%;
-        max-width: 350px;
-        height: 350px; /* Slightly smaller height on small screens */
-    }
-    .modal-content h2 {
-        font-size: 18px;
-    }
-    .modal-content p {
-        font-size: 13px;
-    }
-}
-
-
-/* Mobile Styles */
-@media screen and (max-width: 768px) {
-    .navbar {
-        width: 100%;
-        padding-top: 0;
-        height: 30px;
-        position: relative;
-    }
-
-    .main-content {
-        margin-left: 0;
-    }
-
-    .content {
-        padding: 20px;
-    }
-
-    .modal-content {
-        width: 100%;
-        margin: 10% 10px;
-    }
-
-    footer {
-        padding: 10px 0;
-    }
-
-    .navbar ul {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-around;
-    }
-
-    .navbar ul li {
-        padding: 15px;
-    }
-
-    .navbar ul li a {
-        font-size: 1rem;
-    }
-
-    header {
-        position: relative;
-    }
-}
-
-/* Footer Styles */
-footer {
-    background-color: #009579;
+.completed {
+    background-color: #009579; /* Primary color background for Completed */
     color: white;
-    padding: 15px 0;
-    text-align: center;
-    font-size: 0.9rem;
-    position: relative;
-    width: 100%;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-}
-
-/* Alert Box */
-.alert p{
-    padding: 20px;
-    background-color: #eb4c40;
-    color: white;
-    margin-bottom: 40px;
-    font-size: 14px;
-}
-
-.closebtn {
-    margin-left: 15px;
-    color: white;
-    font-weight: bold;
-    float: right;
-    font-size: 22px;
-    line-height: 20px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.closebtn:hover {
-    color: black;
-}
-
-/* Navbar Styling */
-header {
-    background-color: #009579;
-    color: white;
-    padding: 5px 0;
-}
-
- /* Navbar container */
- .navbar {
-    max-width: 150%;
-    margin: 0 auto;
-    padding: 1cqmin 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-/* Logo styling */
-.navbar .logo a {
-    font-size: 18px;
-    text-decoration: none;
-    color: white;
-    font-weight: bold;
-    letter-spacing: 1px;
-    display: flex;
-    align-items: center; /* Ensure the logo text and icon are vertically aligned */
-}
-
-.navbar .logo i {
-    margin-right: 8px; /* Space between icon and name */
-}
-
-/* Navigation links container */
-.navbar .nav-links {
-    display: flex;
-    list-style: none;
-    margin: -10px;
-    padding: 0;
-}
-
-/* Individual navigation links */
-.navbar .nav-links li {
-    margin-left: 30px;
-    display: flex;
-    align-items: center; /* Align icon and text vertically */
-}
-
-/* Link styling */
-.navbar .nav-links li a {
-    text-decoration: none;
-    color: white;
-    font-size: 16px;
-    display: flex;
-    align-items: center; /* Center the icon and text vertically */
-    transition: color 0.3s ease, transform 0.3s ease;
-}
-
-/* Hover effect on links */
-.navbar .nav-links li a:hover {
-    color: #00BFAE;
-    transform: scale(1.1);
-}
-
-/* Mobile-specific styles */
-@media (max-width: 768px) {
-    /* On mobile screens, make the text hidden and only show icons */
-    .navbar .nav-links li a {
-        font-size: 15px; /* Increase icon size */
-        padding: 10px;
-        justify-content: center; /* Center the icon on mobile */
-    }
-
-    .navbar .nav-links li {
-        margin-left: 10px; /* Smaller margin */
-        display: flex;
-        align-items: center; /* Ensure icons are vertically aligned */
-    }
-
-    /* Hide the text on mobile and only show icons */
-    .navbar .nav-links li a span {
-        display: none; /* Hide text */
-    }
-
-    .navbar .nav-links li a i {
-        font-size: 22px; /* Larger icons */
-        margin-right: 0; /* Remove extra space between icon and text */
-    }
-
-    /* Logo should be smaller and aligned */
-    .navbar .logo a {
-        font-size: 16px;
-    }
-}
-
-/* Style for the buttons */
-button.copy-btn, button.delete-btn {
-    margin-top: 10px;
-    padding: 8px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    border-radius: 5px;
-    border: none;
-    background-color: #4CAF50; /* Default green background */
-    color: white;
-    transition: background-color 0.3s ease;
-}
-
-/* Style for the Copy button */
-button.copy-btn {
-    background-color: #2196F3; /* Blue background for Copy */
-}
-
-button.copy-btn:hover {
-    background-color: #1E88E5;
-}
-
-/* Style for the Delete button */
-button.delete-btn {
-    background-color: #F44336; /* Red background for Delete */
-}
-
-button.delete-btn:hover {
-    background-color: #D32F2F;
-}
-
-/* Add some margin between buttons */
-button:not(:last-child) {
-    margin-right: 10px;
 }
