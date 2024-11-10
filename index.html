@@ -6,95 +6,90 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Data Bundles Platform</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> <!-- Added Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://js.paystack.co/v1/inline.js"></script>
-
-    <!-- Notyf CDN links -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.css">
     <script src="https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.js"></script>
-
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
-
     <header>
-        <nav class="navbar">
-            <!-- Logo -->
+        <nav class="navbar container">
             <div class="logo">
-                <a href="#"><i class="fas fa-cloud" style="font-size: 20px;"></i></a>
+                <a href="#"><i class="fas fa-cloud"></i> DataBundles</a>
             </div>
-    
-            <!-- Navigation Menu -->
             <ul class="nav-links">
-                <li><a href="#"><i class="fas fa-home" style="margin-bottom: 3px;"></i><span> HOME</span></a></li>
-                <li><a href="login.html" id="loginLink"><i class="fas fa-sign-in-alt"></i><span> LOGIN</span></a></li>
-                <li><a href="#" id="accountBtn"><i class="fas fa-user"></i><span> ACCOUNT</span></a></li>
-                <li><a href="#" id="viewOrdersBtn"><i class="fas fa-box"></i><span> ORDERS</span></a></li>
+                <li><a href="#"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="login.html" id="loginLink"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                <li><a href="#" id="accountBtn"><i class="fas fa-user"></i> Account</a></li>
+                <li><a href="#" id="viewOrdersBtn"><i class="fas fa-box"></i> Orders</a></li>
             </ul>
+            <div class="hamburger">
+                <div class="line"></div>
+                <div class="line"></div>
+                <div class="line"></div>
+            </div>
         </nav>
     </header>
-    
 
     <div class="main-content">
         <section class="container">
             <div class="content">
-                <h2><i class="fas fa-mobile-alt"></i> SEND MTN DATA BUNDLE</h2>
+                <h2><i class="fas fa-mobile-alt"></i> Send MTN Data Bundle</h2>
 
                 <div class="alert">
-                    <span class="closebtn" onclick="this.parentElement.style.display='none';"></span>
-                    <p>Your package will take up to 30 minutes to be delivered.
-                        Make sure to double-check the phone number to avoid sending it to the wrong recipient.
-                    </p>
+                    <p><i class="fas fa-info-circle"></i> Your package will take up to 30 minutes to be delivered.
+                        Make sure to double-check the phone number to avoid sending it to the wrong recipient.</p>
                 </div>
 
-                <label for="dataAmount"><i class="fas fa-sim-card"></i> QUANTITY:</label>
-                <select id="dataAmount">
-                    <option value="1GB" data-price="5">1GB - ₵5</option>
-                    <option value="2GB" data-price="10">2GB - ₵10</option>
-                    <option value="5GB" data-price="25">5GB - ₵25</option>
-                </select>
+                <form id="bundleForm">
+                    <label for="dataAmount"><i class="fas fa-sim-card"></i> Quantity:</label>
+                    <select id="dataAmount">
+                        <option value="1GB" data-price="5">1GB - ₵5</option>
+                        <option value="2GB" data-price="10">2GB - ₵10</option>
+                        <option value="5GB" data-price="25">5GB - ₵25</option>
+                    </select>
 
-                <label for="email"><i class="fas fa-envelope"></i> EMAIL:</label>
-                <input type="email" id="email" placeholder="Enter your email" required>
+                    <label for="email"><i class="fas fa-envelope"></i> Email:</label>
+                    <input type="email" id="email" placeholder="Enter your email" required>
 
-                <label for="beneficiaryNumber"><i class="fas fa-phone-alt"></i> BENEFICIARY NUMBER:</label>
-                <input type="text" id="beneficiaryNumber" placeholder="Enter beneficiary number" required>
+                    <label for="beneficiaryNumber"><i class="fas fa-phone-alt"></i> Beneficiary Number:</label>
+                    <input type="text" id="beneficiaryNumber" placeholder="Enter beneficiary number" required>
 
-                <button id="payBtn" class="send-btn"><i class="fas fa-credit-card"></i> SEND BUNDLE</button>
+                    <button type="submit" id="payBtn" class="send-btn"><i class="fas fa-credit-card"></i> Send Bundle</button>
+                </form>
             </div>
         </section>
+    </div>
 
-        <!-- Account Modal -->
-        <div id="accountModal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <span id="closeAccountModal" class="close">&times;</span>
-                <h2><i class="fas fa-user-circle"></i> ACCOUNT INFO</h2>
-                <hr style="margin-bottom: 20px;">
-                
-                <p><strong><i class="fas fa-user"></i> NAME:</strong> <span id="userName"></span></p>
-                <hr style="margin: 10px;">
-
-                <p><strong><i class="fas fa-envelope"></i> EMAIL:</strong> <span id="userEmail"></span></p>
-                <hr style="margin: 10px;">
-                <p><strong><i class="fas fa-phone-alt"></i> PHONE:</strong> <span id="userPhone"></span></p>
-                <hr style="margin: 10px;">
-                <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    <!-- Account Modal -->
+    <div id="accountModal" class="modal">
+        <div class="modal-content">
+            <span id="closeAccountModal" class="close">&times;</span>
+            <h2><i class="fas fa-user-circle"></i> Account Info</h2>
+            <div class="account-info">
+                <i class="fas fa-user"></i>
+                <p><strong>Name:</strong> <span id="userName"></span></p>
+                <i class="fas fa-envelope"></i>
+                <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                <i class="fas fa-phone-alt"></i>
+                <p><strong>Phone:</strong> <span id="userPhone"></span></p>
             </div>
+            <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
+    </div>
 
-        <!-- Orders Modal -->
-        <div id="ordersModal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <span id="closeOrdersModal" class="close">&times;</span>
-                <h2><i class="fas fa-boxes"></i> ORDER PLACED</h2>
-                <hr>
-                <div id="ordersList">No orders found.</div>
-            </div>
+    <!-- Orders Modal -->
+    <div id="ordersModal" class="modal">
+        <div class="modal-content">
+            <span id="closeOrdersModal" class="close">&times;</span>
+            <h2><i class="fas fa-boxes"></i> Your Orders</h2>
+            <div id="ordersList">No orders found.</div>
         </div>
     </div>
 
@@ -102,7 +97,10 @@
 
     <script type="module">
         // Initialize Notyf
-        const notyf = new Notyf();
+        const notyf = new Notyf({
+            duration: 3000,
+            position: { x: 'right', y: 'top' }
+        });
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
@@ -121,7 +119,11 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        document.getElementById("payBtn").addEventListener("click", initiatePayment);
+        // Event Listeners for User Actions
+        document.getElementById("bundleForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            initiatePayment();
+        });
         document.getElementById("accountBtn").addEventListener("click", showAccountDetails);
         document.getElementById("viewOrdersBtn").addEventListener("click", showOrders);
         document.getElementById("logoutBtn").addEventListener("click", () => {
@@ -141,6 +143,7 @@
             document.getElementById("ordersModal").style.display = 'none';
         });
 
+        // Check user authentication state
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('loginLink').style.display = 'none';
@@ -187,19 +190,34 @@
                 set(orderRef, {
                     dataAmount,
                     beneficiaryNumber,
-                    status: 'pending', // Initial status set to 'pending'
+                    status: 'processing',
                     paymentReference: reference,
                     date: new Date().toISOString(),
-                    price
+                    price,
+                    userName: user.displayname || 'N/A',
+                    userEmail: user.email
                 }).then(() => {
                     notyf.success('Order saved successfully!');
-                    updateOrderStatus(reference, 'completed'); // Update status after saving the order
+                    simulateOrderProgress(reference);
                 }).catch((error) => {
                     console.error('Error saving order:', error);
                     notyf.error('Failed to save order.');
                 });
             } else {
                 notyf.error('User not authenticated. Please log in.');
+            }
+        }
+
+        function simulateOrderProgress(reference) {
+            const user = auth.currentUser;
+            if (user) {
+                setTimeout(() => {
+                    updateOrderStatus(reference, 'processing');
+                }, 20000);
+
+                setTimeout(() => {
+                    updateOrderStatus(reference, 'delivered');
+                }, 20000);
             }
         }
 
@@ -211,8 +229,10 @@
                     status: status
                 }).then(() => {
                     console.log('Order status updated to', status);
+                    notyf.success(`Order status updated to ${status}`);
                 }).catch((error) => {
                     console.error('Error updating order status:', error);
+                    notyf.error('Failed to update order status');
                 });
             }
         }
@@ -240,123 +260,84 @@
         }
 
         function showOrders() {
-    const user = auth.currentUser;
-    const ordersList = document.getElementById('ordersList');
-    const ordersModal = document.getElementById('ordersModal');
-    
-    // Show a loading spinner while fetching data
-    ordersList.innerHTML = '<p>Loading orders...</p>';
+            const user = auth.currentUser;
+            const ordersList = document.getElementById('ordersList');
+            const ordersModal = document.getElementById('ordersModal');
+            
+            ordersList.innerHTML = '<p>Loading orders...</p>';
 
-    if (user) {
-        get(ref(db, `orders/${user.uid}`))
-            .then((snapshot) => {
-                ordersList.innerHTML = ''; // Clear the loading message
-                if (snapshot.exists()) {
-                    const orders = snapshot.val();
-                    const orderIds = Object.keys(orders);
-                    orderIds.reverse(); // Newest orders first
+            if (user) {
+                get(ref(db, `orders/${user.uid}`))
+                    .then((snapshot) => {
+                        ordersList.innerHTML = '';
+                        if (snapshot.exists()) {
+                            const orders = snapshot.val();
+                            const orderIds = Object.keys(orders);
+                            orderIds.reverse();
 
-                    orderIds.forEach((orderId) => {
-                        const order = orders[orderId];
-                        const orderDate = new Date(order.date);
-                        const isNewOrder = isSameDay(orderDate, new Date()); // Check if the order is from today
-                        const orderStatus = getOrderStatus(orderDate);
-                        const formattedOrderDate = orderDate.toLocaleString('en-GB', { // Format: DD/MM/YYYY HH:mm
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        });
+                            orderIds.forEach((orderId) => {
+                                const order = orders[orderId];
+                                const orderDate = new Date(order.date);
+                                const formattedOrderDate = orderDate.toLocaleString('en-GB', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                });
 
-                        const orderItem = document.createElement('div');
-                        orderItem.classList.add('order-item');
+                                const orderItem = document.createElement('div');
+                                orderItem.classList.add('order-item');
 
-                        // If the order is new, highlight it with green color
-                        if (isNewOrder) {
-                            orderItem.classList.add('new-order'); // Add a class for new orders
+                                orderItem.innerHTML = `
+                                    <div class="order-header">
+                                        <p class="order-status ${order.status}"><strong>Status:</strong> ${order.status}</p>
+                                        <p><strong>Order ID:</strong> ${orderId}</p>
+                                    </div>
+                                    <div class="order-details">
+                                        <p><strong>Data Bundle:</strong> ${order.dataAmount}</p>
+                                        <p><strong>Beneficiary Number:</strong> ${order.beneficiaryNumber}</p>
+                                        <p><strong>Price:</strong> ₵${order.price}</p>
+                                    </div>
+                                    <div class="order-footer">
+                                        <p><strong>Order Date & Time:</strong> ${formattedOrderDate}</p>
+                                    </div>
+                                `;
+                                ordersList.appendChild(orderItem);
+                            });
+                        } else {
+                            ordersList.innerHTML = '<p>No orders found.</p>';
                         }
-
-                        orderItem.innerHTML = `
-                            <div class="order-header">
-                                <p class="order-status ${orderStatus.class}"><strong>STATUS:</strong> ${orderStatus.text}</p>
-                                <p><strong>ORDER ID:</strong> ${orderId}</p>
-                                
-                            </div>
-                            <div class="order-details">
-                                <p><strong>Data Bundle:</strong> ${order.dataAmount}</p>
-                                <p><strong>Beneficiary Number:</strong> ${order.beneficiaryNumber}</p>
-                                <p><strong>Price:</strong> ₵${order.price}</p>
-                            </div>
-                            <div class="order-footer">
-                                <p><strong>Order Date & Time:</strong> ${formattedOrderDate}</p>
-                            </div>
-                            <hr>
-                        `;
-                        ordersList.appendChild(orderItem);
+                        ordersModal.style.display = 'block';
+                    })
+                    .catch((error) => {
+                        console.error('Error fetching orders:', error);
+                        notyf.error('Failed to load orders.');
                     });
-                } else {
-                    ordersList.innerHTML = '<p>No orders found.</p>';
-                }
-                ordersModal.style.display = 'block'; // Show the modal
-            })
-            .catch((error) => {
-                console.error('Error fetching orders:', error);
-                notyf.error('Failed to load orders.');
-            });
-    } else {
-        notyf.error('User not authenticated.');
-    }
-}
-
-/**
- * Check if two Date objects represent the same day (ignore time)
- */
-function isSameDay(date1, date2) {
-    return date1.getDate() === date2.getDate() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getFullYear() === date2.getFullYear();
-}
-
-/**
- * Get the order status based on the time elapsed since the order was placed
- * @param {Date} orderDate - The date the order was placed
- * @returns {Object} - Returns an object with 'text' (status text) and 'class' (status class for background color)
- */
-function getOrderStatus(orderDate) {
-    const now = new Date();
-    const timeDifference = now - orderDate; // Time difference in milliseconds
-    const thirtyMinutesInMs = 20 * 60 * 1000; // 30 minutes in milliseconds
-
-    if (timeDifference >= thirtyMinutesInMs) {
-        return { text: 'Delivered', class: 'delivered' }; // Delivered after 30 minutes
-    } else {
-        return { text: 'Pending', class: 'pending' }; // Pending if not yet delivered
-    }
-}
-
-
+            } else {
+                notyf.error('User not authenticated.');
+            }
+        }
 
         document.addEventListener("DOMContentLoaded", function () {
-    const hamburger = document.getElementById('hamburger');
-    const navbar = document.querySelector('.navbar');
+            const hamburger = document.querySelector('.hamburger');
+            const navLinks = document.querySelector('.nav-links');
 
-    // Toggle mobile menu on hamburger click
-    hamburger.addEventListener('click', () => {
-        navbar.classList.toggle('active');
-    });
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('active');
+                navLinks.classList.toggle('active');
+            });
 
-    // Close the mobile menu when a link is clicked
-    const mobileLinks = document.querySelectorAll('.mobile-links li a');
-    mobileLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            navbar.classList.remove('active');
+            const links = document.querySelectorAll('.nav-links li a');
+            links.forEach(link => {
+                link.addEventListener('click', () => {
+                    hamburger.classList.remove('active');
+                    navLinks.classList.remove('active');
+                });
+            });
         });
-    });
-});
-
-
     </script>
 </body>
+
 </html>
