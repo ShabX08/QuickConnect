@@ -285,35 +285,12 @@ footer {
 }
 
 .order-status {
-    display: inline-block;
     padding: 0.2rem 0.4rem;
     border-radius: 4px;
     font-weight: bold;
     font-size: 0.8rem;
     text-transform: capitalize;
+    margin: 4px;
 }
 
-.delivered {
-    background-color: #4CAF50; /* Green background for Delivered */
-    color: white;
-}
 
-.pending {
-    background-color: #FFC107; /* Amber background for Pending */
-    color: #000;
-}
-
-.processing {
-    background-color: #2196F3; /* Blue background for Processing */
-    color: white;
-}
-
-.cancelled {
-    background-color: #F44336; /* Red background for Cancelled */
-    color: white;
-}
-
-.completed {
-    background-color: #009579; /* Primary color background for Completed */
-    color: white;
-}
