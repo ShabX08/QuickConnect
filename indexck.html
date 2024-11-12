@@ -1,4 +1,182 @@
-<!doctypehtml><html lang=en><meta charset=UTF-8><meta content="width=device-width,initial-scale=1"name=viewport><meta content="ie=edge"http-equiv=X-UA-Compatible><title>Ckay Bundles</title><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"rel=stylesheet><link href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css rel=stylesheet><script src=https://js.paystack.co/v1/inline.js></script><link href=https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.css rel=stylesheet><script src=https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.js></script><link href=styles.css rel=stylesheet><style>.order-status{font-weight:700;padding:3px 8px;border-radius:3px}.order-status.pending{background-color:#fef3c7;color:#92400e}.order-status.processing{background-color:#e0f2fe;color:#075985}.order-status.delivered{background-color:#dcfce7;color:#166534}.loader{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(255,255,255,.8);display:flex;justify-content:center;align-items:center;z-index:9999}.spinner{width:50px;height:50px;border:5px solid #f3f3f3;border-top:5px solid #3498db;border-radius:50%;animation:spin 1s linear infinite}.pulse{position:absolute;width:50px;height:50px;border:5px solid #3498db;border-radius:50%;animation:pulse 1s cubic-bezier(0,0,.2,1) infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}</style><div class=loader id=loader style=display:none><div class=spinner></div><div class=pulse></div><span class=sr-only>Loading...</span></div><header><nav class="container navbar"><div class=logo><a href=#><i class="fas fa-cloud"></i> CkayConnect</a></div><ul class=nav-links><li><a href=#><i class="fas fa-home"></i> Home</a><li><a href=login.html id=loginLink><i class="fas fa-sign-in-alt"></i> Login</a><li><a href=# id=accountBtn><i class="fas fa-user"></i> Account</a><li><a href=# id=viewOrdersBtn><i class="fas fa-box"></i> Orders</a></ul><div class=hamburger><div class=line></div><div class=line></div><div class=line></div></div></nav></header><div class=main-content><section class=container><div class=content><h2><i class="fas fa-mobile-alt"></i> SEND MTN DATA BUNDLES</h2><div class=alert><p><i class="fas fa-info-circle"></i> Your package will take up to 30 minutes to be delivered. Make sure to double-check the phone number to avoid sending it to the wrong recipient.</div><form id=bundleForm><label for=dataAmount><i class="fas fa-sim-card"></i> Quantity:</label> <select id=dataAmount><option data-price=5.6 value=1GB>1GB - ₵5.3<option data-price=10.5 value=2GB>2GB - ₵10.2<option data-price=14.5 value=3GB>3GB - ₵14.5<option data-price=20 value=4GB>4GB - ₵20<option data-price=24 value=5GB>5GB - ₵24<option data-price=28 value=6GB>6GB - ₵28</select> <label for=email><i class="fas fa-envelope"></i> Email:</label> <input id=email placeholder="Enter your email"required type=email> <label for=beneficiaryNumber><i class="fas fa-phone-alt"></i> Beneficiary Number:</label> <input id=beneficiaryNumber placeholder="Enter beneficiary number"required> <button id=payBtn class=send-btn type=submit><i class="fas fa-credit-card"></i> Send Bundle</button></form></div></section></div><div class=modal id=accountModal><div class=modal-content><span id=closeAccountModal class=close>×</span><h2><i class="fas fa-user-circle"></i> Account Info</h2><div class=account-info><p><i class="fas fa-user"></i> <strong>Name:<br></strong><span id=userName></span><p><i class="fas fa-envelope"></i> <strong>Email:</strong> <span id=userEmail></span><p><i class="fas fa-phone-alt"></i> <strong>Phone:</strong> <span id=userPhone></span></div><button id=logoutBtn><i class="fas fa-sign-out-alt"></i> Logout</button></div></div><div class=modal id=ordersModal><div class=modal-content><span id=closeOrdersModal class=close>×</span><h2><i class="fas fa-boxes"></i> Your Orders</h2><div id=ordersList><div id=userInfo></div><div id=orderItems></div></div></div></div><footer>© 2023 ShabXStore. All Rights Reserved. <i class="fas fa-copyright"></i></footer><script type=module>import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Ckay Bundles</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.js"></script>
+    <link rel="stylesheet" href="stylesck.css">
+    <style>
+        .order-status {
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+
+        .order-status.pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .order-status.processing {
+            background-color: #e0f2fe;
+            color: #075985;
+        }
+
+        .order-status.delivered {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        /* Loader styles */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .pulse {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 5px solid #3498db;
+            border-radius: 50%;
+            animation: pulse 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="loader" class="loader" style="display: none;">
+        <div class="spinner"></div>
+        <div class="pulse"></div>
+        <span class="sr-only">Loading...</span>
+    </div>
+
+    <header>
+        <nav class="navbar container">
+            <div class="logo">
+                <a href="#"><i class="fas fa-cloud"></i> CkayConnect</a>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="login.html" id="loginLink"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                <li><a href="#" id="accountBtn"><i class="fas fa-user"></i> Account</a></li>
+                <li><a href="#" id="viewOrdersBtn"><i class="fas fa-box"></i> Orders</a></li>
+            </ul>
+            <div class="hamburger">
+                <div class="line"></div>
+                <div class="line"></div>
+                <div class="line"></div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="main-content">
+        <section class="container">
+            <div class="content">
+                <h2><i class="fas fa-mobile-alt"></i> SEND MTN DATA BUNDLES</h2>
+
+                <div class="alert">
+                    <p><i class="fas fa-info-circle"></i> Your package will take up to 30 minutes to be delivered.
+                        Make sure to double-check the phone number to avoid sending it to the wrong recipient.</p>
+                </div>
+
+                <form id="bundleForm">
+                    <label for="dataAmount"><i class="fas fa-sim-card"></i> Quantity:</label>
+                    <select id="dataAmount">
+                        <option value="1GB" data-price="5.6">1GB - ₵5.3</option>
+                        <option value="2GB" data-price="10.5">2GB - ₵10.2</option>
+                        <option value="3GB" data-price="14.5">3GB - ₵14.5</option>
+                        <option value="4GB" data-price="20">4GB - ₵20</option>
+                        <option value="5GB" data-price="24">5GB - ₵24</option>
+                        <option value="6GB" data-price="28">6GB - ₵28</option>
+                    </select>
+
+                    <label for="email"><i class="fas fa-envelope"></i> Email:</label>
+                    <input type="email" id="email" placeholder="Enter your email" required>
+
+                    <label for="beneficiaryNumber"><i class="fas fa-phone-alt"></i> Beneficiary Number:</label>
+                    <input type="text" id="beneficiaryNumber" placeholder="Enter beneficiary number" required>
+
+                    <button type="submit" id="payBtn" class="send-btn"><i class="fas fa-credit-card"></i> Send Bundle</button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <!-- Account Modal -->
+    <div id="accountModal" class="modal">
+        <div class="modal-content">
+            <span id="closeAccountModal" class="close">&times;</span>
+            <h2><i class="fas fa-user-circle"></i> Account Info</h2>
+            <div class="account-info">
+                <p><i class="fas fa-user"></i> <strong>Name:<br></strong> <span id="userName"></span></p>
+                <p><i class="fas fa-envelope"></i> <strong>Email:</strong> <span id="userEmail"></span></p>
+                <p><i class="fas fa-phone-alt"></i> <strong>Phone:</strong> <span id="userPhone"></span></p>
+            </div>
+            <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+
+    <!-- Orders Modal -->
+    <div id="ordersModal" class="modal">
+        <div class="modal-content">
+            <span id="closeOrdersModal" class="close">&times;</span>
+            <h2><i class="fas fa-boxes"></i> Your Orders</h2>
+            <div id="ordersList">
+                <div id="userInfo"></div>
+                <div id="orderItems"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>&copy; 2023 ShabXStore. All Rights Reserved. <i class="fas fa-copyright"></i></footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
         import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
@@ -283,4 +461,7 @@
                     navLinks.classList.remove('active');
                 });
             });
-        });</script>
+        });
+    </script>
+</body>
+</html>
