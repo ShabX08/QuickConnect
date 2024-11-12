@@ -205,31 +205,39 @@
             document.getElementById('loader').style.display = 'none';
         }
 
-        // Event Listeners
-        document.getElementById("bundleForm").addEventListener("submit", function (e) {
-            e.preventDefault();
-            initiatePayment();
-        });
-        document.getElementById("accountBtn").addEventListener("click", showAccountDetails);
-        document.getElementById("viewOrdersBtn").addEventListener("click", showOrders);
-        document.getElementById("logoutBtn").addEventListener("click", logout);
-        document.getElementById("closeAccountModal").addEventListener("click", closeAccountModal);
-        document.getElementById("closeOrdersModal").addEventListener("click", closeOrdersModal);
-
         // Check user authentication state
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('loginLink').style.display = 'none';
-                document.getElementById('accountBtn').style.display = 'inline-block';
-                document.getElementById('viewOrdersBtn').style.display = 'inline-block';
-            } else {
-                document.getElementById('loginLink').style.display = 'inline-block';
-                document.getElementById('accountBtn').style.display = 'none';
-                document.getElementById('viewOrdersBtn').style.display = 'none';
-            }
+            updateUIForAuth(user);
         });
 
-        function initiatePayment() {
+        function updateUIForAuth(user) {
+            const loginLink = document.getElementById('loginLink');
+            const accountBtn = document.getElementById('accountBtn');
+            const viewOrdersBtn = document.getElementById('viewOrdersBtn');
+
+            if (user) {
+                loginLink.style.display = 'none';
+                accountBtn.style.display = 'inline-block';
+                viewOrdersBtn.style.display = 'inline-block';
+            } else {
+                loginLink.style.display = 'inline-block';
+                accountBtn.style.display = 'none';
+                viewOrdersBtn.style.display = 'none';
+            }
+        }
+
+        function checkAuth(action) {
+            if (!auth.currentUser) {
+                notyf.error('You have not logged into your account. Please log in to continue.');
+                return false;
+            }
+            return true;
+        }
+
+        function initiatePayment(e) {
+            e.preventDefault();
+            if (!checkAuth('initiate payment')) return;
+
             showLoader();
             const email = document.getElementById('email').value;
             const dataAmount = document.getElementById('dataAmount').value;
@@ -296,6 +304,8 @@
         }
 
         function showAccountDetails() {
+            if (!checkAuth('view account details')) return;
+
             showLoader();
             const user = auth.currentUser;
             if (user) {
@@ -322,6 +332,8 @@
         }
 
         function showOrders() {
+            if (!checkAuth('view orders')) return;
+
             showLoader();
             const user = auth.currentUser;
             const userInfo = document.getElementById('userInfo');
@@ -420,6 +432,14 @@
         function closeOrdersModal() {
             document.getElementById("ordersModal").style.display = 'none';
         }
+
+        // Event Listeners
+        document.getElementById("bundleForm").addEventListener("submit", initiatePayment);
+        document.getElementById("accountBtn").addEventListener("click", showAccountDetails);
+        document.getElementById("viewOrdersBtn").addEventListener("click", showOrders);
+        document.getElementById("logoutBtn").addEventListener("click", logout);
+        document.getElementById("closeAccountModal").addEventListener("click", closeAccountModal);
+        document.getElementById("closeOrdersModal").addEventListener("click", closeOrdersModal);
 
         // Mobile menu toggle
         document.addEventListener("DOMContentLoaded", function () {
