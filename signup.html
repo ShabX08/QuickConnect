@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Sign Up</title>
+    <title>Welcome - Create Your Account</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
@@ -22,18 +22,36 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 90vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         /* Container for the form */
         .container {
-            width: 70%;
+            width: 90%;
             max-width: 500px;
             padding: 30px;
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Logo Styles */
+        .logo {
+            display: block;
+            width: 100px;
+            height: auto;
+            margin: 0 auto 20px;
+        }
+
+        /* Welcome Message Styles */
+        .welcome-message {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #333;
         }
 
         /* Header Styles */
@@ -60,11 +78,12 @@
 
         /* Input Fields */
         input {
-            width: 95%;
+            width: 100%;
             padding: 10px;
             font-size: 1rem;
             border-radius: 5px;
             border: 1px solid #ddd;
+            box-sizing: border-box;
         }
 
         /* Error Handling */
@@ -81,44 +100,6 @@
         }
 
         /* Button Styles */
-        button {
-            width: 100%;
-            padding: 12px;
-            font-size: 1rem;
-            background-color: #009579;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #007a64;
-        }
-
-        /* Link Styles */
-        p {
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        a {
-            color: #009579;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Loading Spinner Styles */
-        #loading {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
-        }
-
         button {
             width: 100%;
             padding: 12px;
@@ -158,6 +139,28 @@
             opacity: 1;
         }
 
+        /* Link Styles */
+        p {
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        a {
+            color: #009579;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Loading Spinner Styles */
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
         .spinner {
             width: 20px;
             height: 20px;
@@ -177,7 +180,9 @@
 <body>
 
     <div class="container">
-        <h2>Create Account</h2>
+        <img src="images/shabxstore logo.jpg" alt="Logo" class="logo">
+        <p class="welcome-message">Welcome! We're excited to have you join us.</p>
+        <h2>Create Your Account</h2>
         <form id="signup-form">
             <div class="input-group">
                 <label for="name">Full Name</label>
@@ -205,11 +210,11 @@
                 <div id="confirm-password-error" class="error-message"></div>
             </div>
             <button type="submit">
-                <span class="button-text">Login</span>
+                <span class="button-text">Sign Up</span>
                 <span class="spinner"></span>
             </button>
         </form>
-        <p>Already have an account? <a href="login.html">Sign Up</a></p>
+        <p>Already have an account? <a href="login.html">Login here</a></p>
 
         <!-- Loading Spinner -->
         <div id="loading"><div class="loader"></div> Please wait...</div>
@@ -277,7 +282,8 @@
 
             if (!valid) return;
 
-            document.getElementById("loading").style.display = "block"; // Show loading indicator
+            const button = this.querySelector('button');
+            button.classList.add('loading');
 
             createUserWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
@@ -289,17 +295,19 @@
                         email: email,
                     })
                     .then(() => {
-                        document.getElementById("loading").style.display = "none"; // Hide loading
-                        notyf.success("Sign-up successful! Welcome " + user.email);
-                        window.location.href = "login.html";  // Redirect to login page
+                        button.classList.remove('loading');
+                        notyf.success("Sign-up successful! Welcome " + name);
+                        setTimeout(() => {
+                            window.location.href = "login.html";  // Redirect to login page
+                        }, 2000);
                     })
                     .catch((error) => {
-                        document.getElementById("loading").style.display = "none";
+                        button.classList.remove('loading');
                         notyf.error("Error saving user data: " + error.message);
                     });
                 })
                 .catch((error) => {
-                    document.getElementById("loading").style.display = "none";
+                    button.classList.remove('loading');
                     notyf.error("Sign-up failed: " + error.message);
                 });
         });
