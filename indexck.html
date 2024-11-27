@@ -1,7 +1,7 @@
-<!doctypehtml><html lang=en><meta charset=UTF-8><meta content="width=device-width,initial-scale=1"name=viewport><meta content="ie=edge"http-equiv=X-UA-Compatible><title>Ckay Bundles</title><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"rel=stylesheet><link href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css rel=stylesheet><script src=https://js.paystack.co/v1/inline.js></script><link href=https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.css rel=stylesheet><script src=https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.js></script><link href=stylesck.css rel=stylesheet><style>.order-status{font-weight:700;padding:3px 8px;border-radius:3px}.order-status.pending{background-color:#fef3c7;color:#92400e}.order-status.processing{background-color:#e0f2fe;color:#075985}.order-status.delivered{background-color:#dcfce7;color:#166534}.loader{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(255,255,255,.8);display:flex;justify-content:center;align-items:center;z-index:9999}.spinner{width:50px;height:50px;border:5px solid #f3f3f3;border-top:5px solid #3498db;border-radius:50%;animation:spin 1s linear infinite}.pulse{position:absolute;width:50px;height:50px;border:5px solid #3498db;border-radius:50%;animation:pulse 1s cubic-bezier(0,0,.2,1) infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}</style><div class=loader id=loader style=display:none><div class=spinner></div><div class=pulse></div><span class=sr-only>Loading...</span></div><header><nav class="container navbar"><div class=logo><a href=#><i class="fas fa-cloud"></i> CkayConnect</a></div><ul class=nav-links><li><a href=#><i class="fas fa-home"></i> Home</a><li><a href=login.html id=loginLink><i class="fas fa-sign-in-alt"></i> Login</a><li><a href=# id=accountBtn><i class="fas fa-user"></i> Account</a><li><a href=# id=viewOrdersBtn><i class="fas fa-box"></i> Orders</a></ul><div class=hamburger><div class=line></div><div class=line></div><div class=line></div></div></nav></header><div class=main-content><section class=container><div class=content><h2><i class="fas fa-mobile-alt"></i> SEND MTN DATA BUNDLES</h2><div class=alert1><p><i class="fas fa-info-circle"></i> WE ARE NOT WORKING TODAY, YOUR PACKAGE WILL BE DELIVERED ON TUESDAY 7AM</div><div class=alert><p><i class="fas fa-info-circle"></i> Your package will take up to 30 minutes to be delivered. Make sure to double-check the phone number to avoid sending it to the wrong recipient.</div><form id=bundleForm><label for=dataAmount><i class="fas fa-sim-card"></i> Quantity:</label> <select id=dataAmount><option data-price=5.6 value=1GB>1GB - ₵5.3<option data-price=10.5 value=2GB>2GB - ₵10.2<option data-price=14.5 value=3GB>3GB - ₵14.5<option data-price=20 value=4GB>4GB - ₵20<option data-price=24 value=5GB>5GB - ₵24<option data-price=28 value=6GB>6GB - ₵28</select> <label for=email><i class="fas fa-envelope"></i> Email:</label> <input id=email placeholder="Enter your email"required type=email> <label for=beneficiaryNumber><i class="fas fa-phone-alt"></i> Beneficiary Number:</label> <input id=beneficiaryNumber placeholder="Enter beneficiary number"required> <button id=payBtn class=send-btn type=submit><i class="fas fa-credit-card"></i> Send Bundle</button></form></div></section></div><div class=modal id=accountModal><div class=modal-content><span id=closeAccountModal class=close>×</span><h2><i class="fas fa-user-circle"></i> Account Info</h2><div class=account-info><p><i class="fas fa-user"></i> <strong>Name:<br></strong><span id=userName></span><p><i class="fas fa-envelope"></i> <strong>Email:</strong> <span id=userEmail></span><p><i class="fas fa-phone-alt"></i> <strong>Phone:</strong> <span id=userPhone></span></div><button id=logoutBtn><i class="fas fa-sign-out-alt"></i> Logout</button></div></div><div class=modal id=ordersModal><div class=modal-content><span id=closeOrdersModal class=close>×</span><h2><i class="fas fa-boxes"></i> Your Orders</h2><div id=ordersList><div id=userInfo></div><div id=orderItems></div></div></div></div><footer>© 2023 ShabXStore. All Rights Reserved. <i class="fas fa-copyright"></i></footer><script type=module>import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+<!doctypehtml><html lang=en><meta charset=UTF-8><meta content="width=device-width,initial-scale=1"name=viewport><meta content="ie=edge"http-equiv=X-UA-Compatible><title>Ckay Bundles</title><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"rel=stylesheet><link href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css rel=stylesheet><script src=https://js.paystack.co/v1/inline.js></script><link href=https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.css rel=stylesheet><script src=https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.js></script><style>:root{--primary-color:#009579;--secondary-color:#10b981;--background-color:#f3f4f6;--text-color:#1f2937;--border-color:#e5e7eb}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Montserrat,sans-serif;background-color:var(--background-color);color:var(--text-color);line-height:1.5}.container{width:90%;max-width:1100px;margin:0 auto;padding:20px}header{background-color:#fff;box-shadow:0 2px 4px rgba(0,0,0,.1);position:sticky;top:0;z-index:1000}.navbar{display:flex;justify-content:space-between;align-items:center;padding:1rem 0}.logo a{color:var(--primary-color);font-size:1.5rem;font-weight:700;text-decoration:none}.nav-links{display:flex;list-style:none}.nav-links li{margin-left:1.5rem}.nav-links a{color:var(--text-color);text-decoration:none;font-weight:500;transition:color .3s ease}.nav-links a:hover{color:var(--primary-color)}.hamburger{display:none;cursor:pointer;background:0 0;border:none;font-size:1.5rem;color:var(--primary-color);transition:transform .3s ease}.hamburger.active{transform:rotate(90deg)}.main-content{padding:0 0}.wallet-balance{background:linear-gradient(135deg,var(--primary-color),#007a63);color:#fff;padding:1.5rem;border-radius:10px;margin-bottom:.5rem;box-shadow:0 4px 6px rgba(0,0,0,.1)}.wallet-balance h3{font-size:1.2rem;margin-bottom:.5rem}.wallet-balance .balance{font-size:2rem;font-weight:700}form{background-color:#fff;padding:2rem;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,.1)}form h3{margin-bottom:1rem;font-size:1.5rem}.form-group{margin-bottom:1.5rem}label{display:block;margin-bottom:.5rem;font-weight:500}input,select{width:100%;padding:.75rem;border:1px solid var(--border-color);border-radius:5px;font-size:1rem}.send-btn{background-color:var(--primary-color);color:#fff;border:none;padding:.75rem 1.5rem;border-radius:5px;font-size:1rem;font-weight:600;cursor:pointer;transition:background-color .3s ease}.send-btn:hover{background-color:#007a63}.modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,.5)}.modal-content{background-color:#fff;margin:10% auto;padding:2rem;border-radius:10px;width:90%;max-width:600px;box-shadow:0 4px 6px rgba(0,0,0,.1)}.close{color:#aaa;float:right;font-size:28px;font-weight:700;cursor:pointer}.close:hover{color:#000}#ordersModal .modal-content{max-width:90%;margin:5% auto}.orders-container{overflow-x:auto;width:100%}.orders-table{width:100%;min-width:800px;border-collapse:collapse;margin-top:1rem}.orders-table td,.orders-table th{padding:.75rem;text-align:left;border-bottom:1px solid var(--border-color)}.orders-table th{background-color:#f8f9fa;font-weight:600}.status{padding:.25rem .5rem;border-radius:9999px;font-size:.75rem;font-weight:600}.status-delivered{background-color:#d1fae5;color:#065f46}.status-pending{background-color:#fef3c7;color:#92400e}.status-processing{background-color:#dbeafe;color:#1e40af}.account-info-table{width:100%;border-collapse:collapse;margin-top:1rem}.account-info-table td,.account-info-table th{padding:.75rem;text-align:left;border-bottom:1px solid var(--border-color)}.account-info-table th{font-weight:600;color:var(--primary-color)}footer{background-color:var(--primary-color);color:#fff;text-align:center;padding:1rem 0;margin-top:.7rem}footer .copyright{font-weight:500}@media (max-width:768px){.nav-links{display:none;flex-direction:column;position:absolute;top:60px;left:0;width:100%;background-color:#fff;box-shadow:0 2px 4px rgba(0,0,0,.1)}.nav-links.active{display:flex}.nav-links li{margin:0;text-align:center}.nav-links a{display:block;padding:1rem}.hamburger{display:block}.orders-table{font-size:.8rem}.orders-table td,.orders-table th{padding:.5rem}}</style><div class=loader id=loader style=display:none><div class=spinner></div><div class=pulse></div><span class=sr-only>Loading...</span></div><header><nav class="container navbar"><div class=logo><a href=#><i class="fas fa-cloud"></i> CkayConnect</a></div><ul class=nav-links><li><a href=#><i class="fas fa-home"></i> Home</a><li><a href=login.html id=loginLink><i class="fas fa-sign-in-alt"></i> Login</a><li><a href=# id=accountBtn><i class="fas fa-user"></i> Account</a><li><a href=# id=viewOrdersBtn><i class="fas fa-box"></i> Orders</a><li><a href=# id=walletBtn><i class="fas fa-wallet"></i> Deposit</a></ul><button class=hamburger aria-label="Toggle menu"><i class="fas fa-bars"></i></button></nav></header><div class=main-content><section class=container><div class=wallet-balance><h3><i class="fas fa-wallet"></i> Wallet Balance</h3><div class=balance id=walletBalance>GHS 0.00</div></div><form id=bundleForm><h3><i class="fas fa-mobile-alt"></i> SEND MTN DATA BUNDLES</h3><div class=form-group><label for=dataAmount><i class="fas fa-sim-card"></i> Quantity:</label> <select id=dataAmount><option data-price=5.6 value=1GB>1GB - GHS 5.3<option data-price=10.5 value=2GB>2GB - GHS 10.2<option data-price=14.5 value=3GB>3GB - GHS 14.5<option data-price=20 value=4GB>4GB - GHS 20<option data-price=24 value=5GB>5GB - GHS 24<option data-price=28 value=6GB>6GB - GHS 28</select></div><div class=form-group><label for=email><i class="fas fa-envelope"></i> Email:</label> <input id=email required placeholder="Enter your email"type=email></div><div class=form-group><label for=beneficiaryNumber><i class="fas fa-phone-alt"></i> Beneficiary Number:</label> <input id=beneficiaryNumber required placeholder="Enter beneficiary number"></div><button class=send-btn id=payBtn type=submit><i class="fas fa-wallet"></i> SEND BUNDLE</button></form></section></div><div class=modal id=accountModal><div class=modal-content><span class=close id=closeAccountModal>×</span><h2><i class="fas fa-user-circle"></i> Account Info</h2><table class=account-info-table><tr><th><i class="fas fa-user"></i> Name<td id=userName><tr><th><i class="fas fa-envelope"></i> Email<td id=userEmail><tr><th><i class="fas fa-phone"></i> Phone<td id=userPhone><tr><th><i class="fas fa-wallet"></i> Wallet Balance<td id=userWallet></table><button class=send-btn id=logoutBtn><i class="fas fa-sign-out-alt"></i> Logout</button></div></div><div class=modal id=ordersModal><div class=modal-content><span class=close id=closeOrdersModal>×</span><h2><i class="fas fa-box"></i> Your Orders</h2><div id=userInfo></div><div class=orders-container><table class=orders-table><thead><tr><th>ID<th>Msisdn<th>Package<th>Amount<th>Value<th>Gateway<th>Status<th>Reference<th>Date<tbody id=orderItems></table></div></div></div><div class=modal id=walletModal><div class=modal-content><span class=close id=closeWalletModal>×</span><h2><i class="fas fa-wallet"></i> Add Money to Wallet</h2><form id=addMoneyForm><div class=form-group><label for=amount><i class="fas fa-money-bill-wave"></i> Amount (GHS):</label> <input id=amount required type=number min=1 step=0.01></div><button class=send-btn type=submit><i class="fas fa-plus-circle"></i> Add Money</button></form></div></div><footer><div class=copyright>© 2023 ShabXStore. All Rights Reserved. <i class="fas fa-copyright"></i></div></footer><script type=module>import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-        import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-
+        import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    
         const firebaseConfig = {
             apiKey: "AIzaSyAu2d2jW-80IfCDPV6Iex_tM2YU8jq7QXI",
             authDomain: "shabxstore-auth.firebaseapp.com",
@@ -10,47 +10,51 @@
             messagingSenderId: "559599767419",
             appId: "1:559599767419:web:17f1a0eef0589d3dd077de"
         };
-
+    
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
-
-        // Initialize Notyf
+    
         const notyf = new Notyf({
             duration: 3000,
-            position: { x: 'right', y: 'top' }
+            position: { x: 'right', y: 'top'}
         });
-
-        // Loader functions
+    
         function showLoader() {
             document.getElementById('loader').style.display = 'flex';
         }
-
+    
         function hideLoader() {
             document.getElementById('loader').style.display = 'none';
         }
-
-        // Check user authentication state
+    
         onAuthStateChanged(auth, (user) => {
             updateUIForAuth(user);
+            if (user) {
+                fetchWalletBalance(user.uid);
+                listenForOrderUpdates(user.uid);
+            }
         });
-
+    
         function updateUIForAuth(user) {
             const loginLink = document.getElementById('loginLink');
             const accountBtn = document.getElementById('accountBtn');
             const viewOrdersBtn = document.getElementById('viewOrdersBtn');
-
+            const walletBtn = document.getElementById('walletBtn');
+    
             if (user) {
                 loginLink.style.display = 'none';
                 accountBtn.style.display = 'inline-block';
                 viewOrdersBtn.style.display = 'inline-block';
+                walletBtn.style.display = 'inline-block';
             } else {
                 loginLink.style.display = 'inline-block';
                 accountBtn.style.display = 'none';
                 viewOrdersBtn.style.display = 'none';
+                walletBtn.style.display = 'none';
             }
         }
-
+    
         function checkAuth(action) {
             if (!auth.currentUser) {
                 notyf.error('You have not logged into your account. Please log in to continue.');
@@ -58,7 +62,7 @@
             }
             return true;
         }
-
+    
         function initiatePayment(e) {
             e.preventDefault();
             if (!checkAuth('initiate payment')) return;
@@ -66,7 +70,7 @@
             showLoader();
             const email = document.getElementById('email').value;
             const dataAmount = document.getElementById('dataAmount').value;
-            const price = document.querySelector(`#dataAmount option[value="${dataAmount}"]`).getAttribute('data-price');
+            const price = parseFloat(document.querySelector(`#dataAmount option[value="${dataAmount}"]`).getAttribute('data-price'));
             const beneficiaryNumber = document.getElementById('beneficiaryNumber').value;
 
             if (!email || !beneficiaryNumber || !dataAmount) {
@@ -75,25 +79,46 @@
                 return;
             }
 
-            const handler = PaystackPop.setup({
-                key: 'pk_live_720ed3e1b0c2a29550a1d4a647663b875094a786',
-                email: email,
-                amount: price * 100,
-                currency: 'GHS',
-                callback: function (response) {
+            const user = auth.currentUser;
+            if (user) {
+                get(ref(db, `users/${user.uid}/wallet`)).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const walletBalance = snapshot.val().balance || 0;
+                        if (walletBalance >= price) {
+                            const newBalance = walletBalance - price;
+                            update(ref(db, `users/${user.uid}/wallet`), { balance: newBalance })
+                                .then(() => {
+                                    const reference = 'WALLET_' + Date.now();
+                                    saveOrder(reference, dataAmount, beneficiaryNumber, price);
+                                    fetchWalletBalance(user.uid);
+                                    resetForm();
+                                    hideLoader();
+                                    notyf.success('Payment successful! Data bundle purchased.');
+                                })
+                                .catch((error) => {
+                                    hideLoader();
+                                    console.error('Error updating wallet balance:', error);
+                                    notyf.error('Failed to process payment. Please try again.');
+                                });
+                        } else {
+                            hideLoader();
+                            notyf.error('Insufficient wallet balance. Please add money to your wallet.');
+                        }
+                    } else {
+                        hideLoader();
+                        notyf.error('Wallet not found. Please contact support.');
+                    }
+                }).catch((error) => {
                     hideLoader();
-                    notyf.success('Payment successful! Ref: ' + response.reference);
-                    saveOrder(response.reference, dataAmount, beneficiaryNumber, price);
-                    resetForm();
-                },
-                onClose: function () {
-                    hideLoader();
-                    notyf.error('Payment was cancelled.');
-                }
-            });
-            handler.openIframe();
+                    console.error('Error fetching wallet balance:', error);
+                    notyf.error('Failed to fetch wallet balance. Please try again.');
+                });
+            } else {
+                hideLoader();
+                notyf.error('User not authenticated. Please log in.');
+            }
         }
-
+    
         function saveOrder(reference, dataAmount, beneficiaryNumber, price) {
             showLoader();
             const user = auth.currentUser;
@@ -102,7 +127,7 @@
                 set(orderRef, {
                     dataAmount,
                     beneficiaryNumber,
-                    status: 'pending',
+                    status: 'Received',
                     paymentReference: reference,
                     date: new Date().toISOString(),
                     price,
@@ -121,16 +146,16 @@
                 notyf.error('User not authenticated. Please log in.');
             }
         }
-
+    
         function resetForm() {
             document.getElementById('email').value = '';
             document.getElementById('beneficiaryNumber').value = '';
             document.getElementById('dataAmount').selectedIndex = 0;
         }
-
+    
         function showAccountDetails() {
             if (!checkAuth('view account details')) return;
-
+    
             showLoader();
             const user = auth.currentUser;
             if (user) {
@@ -141,6 +166,7 @@
                         document.getElementById('userName').textContent = userData.name || 'No name';
                         document.getElementById('userEmail').textContent = user.email;
                         document.getElementById('userPhone').textContent = userData.phone || 'No phone number';
+                        document.getElementById('userWallet').textContent = `GHS ${userData.wallet?.balance || '0.00'}`;
                         document.getElementById('accountModal').style.display = 'block';
                     } else {
                         notyf.error('User data not found.');
@@ -155,89 +181,81 @@
                 notyf.error('User not authenticated.');
             }
         }
-
+    
         function showOrders() {
-            if (!checkAuth('view orders')) return;
+    if (!checkAuth('view orders')) return;
 
-            showLoader();
-            const user = auth.currentUser;
-            const userInfo = document.getElementById('userInfo');
-            const orderItems = document.getElementById('orderItems');
-            const ordersModal = document.getElementById('ordersModal');
-            
-            userInfo.innerHTML = '<p>Loading user information...</p>';
-            orderItems.innerHTML = '<p>Loading orders...</p>';
+    showLoader();
+    const user = auth.currentUser;
+    const userInfo = document.getElementById('userInfo');
+    const orderItems = document.getElementById('orderItems');
+    const ordersModal = document.getElementById('ordersModal');
+    
+    userInfo.innerHTML = '';
+    orderItems.innerHTML = '';
 
-            if (user) {
-                get(ref(db, `users/${user.uid}`)).then((userSnapshot) => {
-                    const userData = userSnapshot.val();
-                    userInfo.innerHTML = `
-                        <h3>User Information</h3>
-                        <p><strong>Name:</strong> ${userData.name || 'N/A'}</p>
-                        <p><strong>Email:</strong> ${user.email}</p>
-                        <p><strong>Phone:</strong> ${userData.phone || 'N/A'}</p>
-                    `;
-
-                    get(ref(db, `orders/${user.uid}`))
-                        .then((snapshot) => {
-                            hideLoader();
-                            orderItems.innerHTML = '';
-                            if (snapshot.exists()) {
-                                const orders = snapshot.val();
-                                const orderIds = Object.keys(orders);
-                                orderIds.reverse();
-
-                                orderIds.forEach((orderId) => {
-                                    const order = orders[orderId];
-                                    const orderDate = new Date(order.date);
-                                    const formattedOrderDate = orderDate.toLocaleString('en-GB', {
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        second: '2-digit'
-                                    });
-
-                                    const orderItem = document.createElement('div');
-                                    orderItem.classList.add('order-item');
-                                    orderItem.innerHTML = `
-                                        <div class="order-header">
-                                            <p class="order-status ${order.status}"><strong>Status:</strong> ${order.status}</p>
-                                            <p><strong>Order ID:</strong> ${orderId}</p>
-                                        </div>
-                                        <div class="order-details">
-                                            <p><strong>Data Bundle:</strong> ${order.dataAmount}</p>
-                                            <p><strong>Beneficiary Number:</strong> ${order.beneficiaryNumber}</p>
-                                            <p><strong>Price:</strong> ₵${order.price}</p>
-                                        </div>
-                                        <div class="order-footer">
-                                            <p><strong>Order Date & Time:</strong> ${formattedOrderDate}</p>
-                                        </div>
-                                    `;
-                                    orderItems.appendChild(orderItem);
-                                });
-                            } else {
-                                orderItems.innerHTML = '<p>No orders found.</p>';
-                            }
-                            ordersModal.style.display = 'block';
-                        })
-                        .catch((error) => {
-                            hideLoader();
-                            console.error('Error fetching orders:', error);
-                            notyf.error('Failed to load orders.');
-                        });
-                }).catch((error) => {
-                    hideLoader();
-                    console.error('Error fetching user data:', error);
-                    notyf.error('Failed to load user data.');
-                });
-            } else {
-                hideLoader();
-                notyf.error('User not authenticated.');
+    if (user) {
+        get(ref(db, `users/${user.uid}`)).then((userSnapshot) => {
+            if (userSnapshot.exists()) {
+                const userData = userSnapshot.val();
+                userInfo.innerHTML = `
+                    <p><strong>Name:</strong> ${userData.name || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Phone:</strong> ${userData.phone || 'N/A'}</p>
+                `;
             }
-        }
 
+            get(ref(db, `orders/${user.uid}`))
+                .then((orderSnapshot) => {
+                    hideLoader();
+                    if (orderSnapshot.exists()) {
+                        const orders = orderSnapshot.val();
+                        let orderArray = Object.entries(orders).map(([orderId, order]) => ({
+                            id: orderId,
+                            ...order
+                        }));
+                        
+                        // Sort orders by date in descending order
+                        orderArray.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                        let orderHtml = '';
+                        for (const order of orderArray) {
+                            orderHtml += `
+                                <tr>
+                                    <td>${order.id}</td>
+                                    <td>${order.beneficiaryNumber}</td>
+                                    <td>${order.dataAmount}</td>
+                                    <td>GHS ${order.price}</td>
+                                    <td>${order.dataAmount}</td>
+                                    <td>WEB</td>
+                                    <td><span class="status status-${order.status.toLowerCase()}">${order.status}</span></td>
+                                    <td>${order.paymentReference}</td>
+                                    <td>${new Date(order.date).toLocaleString()}</td>
+                                </tr>
+                            `;
+                        }
+                        orderItems.innerHTML = orderHtml;
+                    } else {
+                        orderItems.innerHTML = '<tr><td colspan="9">No orders found.</td></tr>';
+                    }
+                    ordersModal.style.display = 'block';
+                })
+                .catch((error) => {
+                    hideLoader();
+                    console.error('Error fetching orders:', error);
+                    notyf.error('Failed to load orders.');
+                });
+        }).catch((error) => {
+            hideLoader();
+            console.error('Error fetching user data:', error);
+            notyf.error('Failed to load user data.');
+        });
+    } else {
+        hideLoader();
+        notyf.error('User not authenticated.');
+    }
+}
+    
         function logout() {
             showLoader();
             signOut(auth).then(() => {
@@ -249,15 +267,111 @@
                 notyf.error('Logout failed: ' + error.message);
             });
         }
-
+    
         function closeAccountModal() {
             document.getElementById("accountModal").style.display = 'none';
         }
-
+    
         function closeOrdersModal() {
             document.getElementById("ordersModal").style.display = 'none';
         }
 
+        function closeWalletModal() {
+            document.getElementById("walletModal").style.display = 'none';
+        }
+
+        function showWalletModal() {
+            if (!checkAuth('add money to wallet')) return;
+            document.getElementById("walletModal").style.display = 'block';
+        }
+
+        function fetchWalletBalance(userId) {
+            get(ref(db, `users/${userId}/wallet`)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const balance = snapshot.val().balance || 0;
+                    document.getElementById('walletBalance').textContent = `GHS ${balance.toFixed(2)}`;
+                } else {
+                    document.getElementById('walletBalance').textContent = 'GHS 0.00';
+                }
+            }).catch((error) => {
+                console.error('Error fetching wallet balance:', error);
+                notyf.error('Failed to fetch wallet balance.');
+            });
+        }
+
+        function addMoneyToWallet(e) {
+            e.preventDefault();
+            if (!checkAuth('add money to wallet')) return;
+
+            const amount = parseFloat(document.getElementById('amount').value);
+            if (isNaN(amount) || amount <= 0) {
+                notyf.error('Please enter a valid amount.');
+                return;
+            }
+
+            showLoader();
+            const user = auth.currentUser;
+            const handler = PaystackPop.setup({
+                key: 'pk_test_465904782c379e7b5eb53646745fec92442a3af4',
+                email: user.email,
+                amount: amount * 100,
+                currency: 'GHS',
+                callback: function(response) {
+                    updateWalletBalance(user.uid, amount, response.reference);
+                },
+                onClose: function() {
+                    hideLoader();
+                    notyf.error('Transaction cancelled.');
+                }
+            });
+            handler.openIframe();
+        }
+
+        function updateWalletBalance(userId, amount, reference) {
+            const walletRef = ref(db, `users/${userId}/wallet`);
+            get(walletRef).then((snapshot) => {
+                const currentBalance = snapshot.exists() ? snapshot.val().balance || 0 : 0;
+                const newBalance = currentBalance + amount;
+                return set(walletRef, {
+                    balance: newBalance,
+                    lastTransaction: {
+                        amount: amount,
+                        date: new Date().toISOString(),
+                        reference: reference
+                    }
+                });
+            }).then(() => {
+                hideLoader();
+                notyf.success(`Successfully added GHS ${amount.toFixed(2)} to your wallet.`);
+                fetchWalletBalance(userId);
+                closeWalletModal();
+            }).catch((error) => {
+                hideLoader();
+                console.error('Error updating wallet balance:', error);
+                notyf.error('Failed to update wallet balance.');
+            });
+        }
+
+        function listenForOrderUpdates(userId) {
+            const ordersRef = ref(db, `orders/${userId}`);
+            onValue(ordersRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const orders = snapshot.val();
+                    for (const [orderId, order] of Object.entries(orders)) {
+                        updateOrderStatus(orderId, order.status);
+                    }
+                }
+            });
+        }
+
+        function updateOrderStatus(orderId, status) {
+            const statusElement = document.querySelector(`#orderItems tr:has(td:first-child:contains("${orderId}")) .status`);
+            if (statusElement) {
+                statusElement.className = `status status-${status.toLowerCase()}`;
+                statusElement.textContent = status;
+            }
+        }
+    
         // Event Listeners
         document.getElementById("bundleForm").addEventListener("submit", initiatePayment);
         document.getElementById("accountBtn").addEventListener("click", showAccountDetails);
@@ -265,22 +379,31 @@
         document.getElementById("logoutBtn").addEventListener("click", logout);
         document.getElementById("closeAccountModal").addEventListener("click", closeAccountModal);
         document.getElementById("closeOrdersModal").addEventListener("click", closeOrdersModal);
+        document.getElementById("walletBtn").addEventListener("click", showWalletModal);
+        document.getElementById("closeWalletModal").addEventListener("click", closeWalletModal);
+        document.getElementById("addMoneyForm").addEventListener("submit", addMoneyToWallet);
 
         // Mobile menu toggle
-        document.addEventListener("DOMContentLoaded", function () {
-            const hamburger = document.querySelector('.hamburger');
-            const navLinks = document.querySelector('.nav-links');
+        const hamburger = document.querySelector('.hamburger');
+        const navLinks = document.querySelector('.nav-links');
 
-            hamburger.addEventListener('click', () => {
-                hamburger.classList.toggle('active');
-                navLinks.classList.toggle('active');
-            });
+        hamburger.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        });
 
-            const links = document.querySelectorAll('.nav-links li a');
-            links.forEach(link => {  
-                link.addEventListener('click', () => {
-                    hamburger.classList.remove('active');
-                    navLinks.classList.remove('active');
-                });
+        // Close mobile menu when a link is clicked
+        const links = document.querySelector('.nav-links').getElementsByTagName('a');
+        for (let i = 0; i < links.length; i++) {
+            links[i].addEventListener('click', () => {
+                navLinks.classList.remove('active');
+                hamburger.classList.remove('active');
             });
-        });</script>
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = "none";
+            }
+        }</script>
