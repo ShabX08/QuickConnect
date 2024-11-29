@@ -450,4 +450,18 @@ async function sendTelegramNotification() {
     } catch (error) {
         console.error('Error sending Telegram notification:', error);
     }
+
+        // Get all dropdown menu items
+  const dropdown = document.querySelectorAll('.dropdown');
+
+  dropdown.forEach(item => {
+    item.addEventListener('click', function(event) {
+      // Prevent the link from following the URL
+      event.preventDefault();
+
+      // Toggle the dropdown menu
+      const dropdownContent = this.querySelector('.dropdown-content');
+      dropdownContent.style.display = (dropdownContent.style.display === 'block') ? 'none' : 'block';
+    });
+  });
 }</script>
