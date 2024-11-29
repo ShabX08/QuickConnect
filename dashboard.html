@@ -8,12 +8,29 @@
             appId: "1:559599767419:web:17f1a0eef0589d3dd077de"
         };
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.database();
+
+        // Check if user is logged in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is logged in, show dashboard content
+                document.body.style.display = 'block';
+                // Initialize your dashboard functionality here
+                initializeDashboard();
+            } 
+        });
+
+        function initializeDashboard() {
+            // Your existing dashboard initialization code here
+            // This includes fetching data, rendering users and orders, etc.
+        }
+
 
         let users = {};
         let orders = {};
         let filteredOrders = {};
-        let visibleItems = 100;
+        let visibleItems = 6;
         let currentTab = 'users';
 
         // DOM Elements
@@ -24,6 +41,16 @@
         const editModal = document.getElementById('editModal');
         const editForm = document.getElementById('editForm');
         const closeBtn = document.getElementsByClassName('close')[0];
+
+        // Authentication state observer
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                logoutBtn.style.display = 'block';
+                fetchData();
+            } else {
+                window.location.href = 'dashlogin.html';
+            }
+        });
 
         // Fetch data from Firebase
         function fetchData() {
