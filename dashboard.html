@@ -11,17 +11,6 @@
         const auth = firebase.auth();
         const db = firebase.database();
 
-        // Check if user is logged in
-        auth.onAuthStateChanged((user) => {
-            if (!user) {
-                // User is not logged in, redirect to login page
-                window.location.href = 'dashlogin.html';
-            } else {
-                // User is logged in, show dashboard content
-                document.body.style.display = 'block';
-            }
-        });
-
 
         let users = {};
         let orders = {};
