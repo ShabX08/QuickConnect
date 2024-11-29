@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>CkayCOnnect Store Status</title>
+    <style>
+        :root {
+  --primary-color: #009579;
+  --secondary-color: #10b981;
+  --background-color: #f3f4f6;
+  --text-color: #1f2937;
+  --border-color: #e5e7eb;
+  --transition-speed: 0.3s;
+}
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.5;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status-card {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-on {
+            background-color: #4CAF50;
+        }
+        .status-off {
+            background-color: #F44336;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ShabXStore Status</h1>
+        <p><i class="fa-solid fa-circle-dot"></i> Come back in a few hours, when store is closed</p>
+        <p><i class="fa-solid fa-circle-dot"></i> All new orders will be deliverd immediately store is opened</p>
+        <p><i class="fa-solid fa-circle-dot"></i> Green: Yes!</p>
+        <p><i class="fa-solid fa-circle-dot"></i> Red: No!</p>
+        <div id="statusContainer" class="status-card">
+            <p class="loading">Loading store status...</p>
+        </div>
+        <a href="indexck.html"><button style="background-color: green; padding: 10px; margin-top: 10px; border-radius: 5px; color: white; border: 2px solid white; font-family:Arial, Helvetica, sans-serif;">
+            <i class="fa-solid fa-rotate-left"></i> Go Back</button></a>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAu2d2jW-80IfCDPV6Iex_tM2YU8jq7QXI",
+            authDomain: "shabxstore-auth.firebaseapp.com",
+            projectId: "shabxstore-auth",
+            storageBucket: "shabxstore-auth.firebasestorage.app",
+            messagingSenderId: "559599767419",
+            appId: "1:559599767419:web:17f1a0eef0589d3dd077de"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Function to update the status display
+        function updateStatusDisplay(status) {
+            const statusContainer = document.getElementById('statusContainer');
+            statusContainer.innerHTML = `
+                <div class="status-item">
+                    <span>Store Open   <i class="fa-solid fa-right-long"></i></span>
+                    <span class="status-indicator ${status.isOpen ? 'status-on' : 'status-off'}"></span>
+                </div>
+                <div class="status-item">
+                    <span>Fast Delivery   <i class="fa-solid fa-right-long"></i></span>
+                    <span class="status-indicator ${status.fastDelivery ? 'status-on' : 'status-off'}"></span>
+                </div>
+                <div class="status-item">
+                    <span>In Stock   <i class="fa-solid fa-right-long"></i></span>
+                    <span class="status-indicator ${status.inStock ? 'status-on' : 'status-off'}"></span>
+                </div>
+            `;
+        }
+
+        // Listen for changes in Firebase
+        db.ref('storeStatus').on('value', (snapshot) => {
+            const status = snapshot.val() || {
+                isOpen: false,
+                fastDelivery: false,
+                inStock: false
+            };
+            updateStatusDisplay(status);
+        }, (error) => {
+            console.error("Error fetching store status:", error);
+            document.getElementById('statusContainer').innerHTML = '<p>Error loading store status. Please try again later.</p>';
+        });
+    </script>
+</body>
+</html>
