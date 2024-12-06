@@ -30,20 +30,15 @@
 }
 
 body {
+  margin: 0;
+  padding: 0;
   font-family: 'Montserrat', sans-serif;
   background-color: var(--background-color);
   color: var(--text-color);
   line-height: 1.5;
-  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-}
-
-@media (max-width: 768px) {
-  body{
-    min-height: 100vh;
-  }
 }
 
 .container {
@@ -112,10 +107,11 @@ header {
 }
 
 .main-content {
-  padding: 2rem 0;
+  padding: 2rem 0 0 0;
   margin-top: 40px; /* Adjust based on your header height */
   flex-grow: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .wallet-balance {
@@ -144,7 +140,8 @@ form {
   border-radius: 10px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   width: 100%;
-  margin-bottom: -70px;
+  margin-bottom: 0;
+  flex-grow: 1;
 }
 
 form h3 {
@@ -215,6 +212,7 @@ input:focus, select:focus {
   max-width: 800px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
+
 
 .close {
   color: #aaa;
@@ -340,11 +338,13 @@ input:focus, select:focus {
   width: 40%;
 }
 
-footer {
+.footer {
   background-color: var(--primary-color);
   color: white;
   text-align: center;
   padding: 0.7rem 0;
+  margin-top: auto;
+  position: relative;
 }
 
 @media (max-width: 768px) {
@@ -684,11 +684,13 @@ footer .copyright {
         </div>
     </div>
     
+    <div class="footer">
     <footer>
         <div class="copyright">
             <i class="fas fa-copyright"></i> 2023 ShabXStore. All Rights Reserved.
         </div>
     </footer>
+  </div>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
