@@ -1,87 +1,196 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShabXStore Status</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <title>CkayCOnnect Store Status</title>
     <style>
         :root {
-  --primary-color: #009579;
-  --secondary-color: #10b981;
-  --background-color: #f3f4f6;
-  --text-color: #1f2937;
-  --border-color: #e5e7eb;
-  --transition-speed: 0.3s;
-}
-
-body {
-  font-family: 'Montserrat', sans-serif;
-  background-color: var(--background-color);
-  color: var(--text-color);
-  line-height: 1.5;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            max-width: 400px;
-            width: 100%;
+            --primary-color: #009579;
+            --secondary-color: #10b981;
+            --background-color: #f3f4f6;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --transition-speed: 0.3s;
         }
-        h1 {
-            color: #333;
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            padding: 20px;
             text-align: center;
         }
-        .status-card {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 15px;
-            margin-top: 20px;
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
         }
+
+        main {
+            padding: 20px;
+        }
+
+        .info-section {
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .info-list {
+            list-style-type: none;
+        }
+
+        .info-list li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .info-list i {
+            margin-right: 10px;
+            color: var(--secondary-color);
+        }
+
+        .status-section {
+            background-color: var(--background-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
         .status-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
+
         .status-indicator {
             width: 20px;
             height: 20px;
             border-radius: 50%;
             display: inline-block;
         }
+
         .status-on {
-            background-color: #4CAF50;
+            background-color: var(--success-color);
         }
+
         .status-off {
-            background-color: #F44336;
+            background-color: var(--error-color);
         }
+
         .loading {
             text-align: center;
             font-style: italic;
-            color: #666;
+            color: #666666;
+        }
+
+        footer {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .btn-back {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color var(--transition-speed);
+        }
+
+        .btn-back:hover {
+            background-color: var(--primary-color);
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            h2 {
+                font-size: 18px;
+            }
+
+            .status-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .status-indicator {
+                margin-top: 5px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>ShabXStore Status</h1>
-        <p><i class="fa-solid fa-circle-dot"></i> Come back in a few hours, when store is closed</p>
-        <p><i class="fa-solid fa-circle-dot"></i> All new orders will be deliverd immediately store is opened</p>
-        <p><i class="fa-solid fa-circle-dot"></i> Green: Yes!</p>
-        <p><i class="fa-solid fa-circle-dot"></i> Red: No!</p>
-        <div id="statusContainer" class="status-card">
-            <p class="loading">Loading store status...</p>
-        </div>
-        <a href="indexck.html"><button style="background-color: green; padding: 10px; margin-top: 10px; border-radius: 5px; color: white; border: 2px solid white; font-family:Arial, Helvetica, sans-serif;">
-            <i class="fa-solid fa-rotate-left"></i> Go Back</button></a>
+        <header>
+            <h1>ShabXStore Status</h1>
+        </header>
+        <main>
+            <section class="info-section">
+                <h2>Store Information</h2>
+                <ul class="info-list">
+                    <li><i class="fa-solid fa-clock"></i> Check back in a few hours when the store reopens</li>
+                    <li><i class="fa-solid fa-truck-fast"></i> New orders will be delivered once the store opens</li>
+                    <li><i class="fa-solid fa-circle text-success"></i> Green indicates "Yes"</li>
+                    <li><i class="fa-solid fa-circle text-error"></i> Red indicates "No"</li>
+                </ul>
+            </section>
+            <section class="status-section">
+                <h2>Current Status</h2>
+                <div id="statusContainer">
+                    <p class="loading">Loading store status...</p>
+                </div>
+            </section>
+        </main>
+        <footer>
+            <a href="indexck.html" class="btn-back">
+                <i class="fa-solid fa-rotate-left"></i> Go Back
+            </a>
+        </footer>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -104,15 +213,15 @@ body {
             const statusContainer = document.getElementById('statusContainer');
             statusContainer.innerHTML = `
                 <div class="status-item">
-                    <span>Store Open   <i class="fa-solid fa-right-long"></i></span>
+                    <span>Store Open</span>
                     <span class="status-indicator ${status.isOpen ? 'status-on' : 'status-off'}"></span>
                 </div>
                 <div class="status-item">
-                    <span>Fast Delivery   <i class="fa-solid fa-right-long"></i></span>
+                    <span>Fast Delivery</span>
                     <span class="status-indicator ${status.fastDelivery ? 'status-on' : 'status-off'}"></span>
                 </div>
                 <div class="status-item">
-                    <span>In Stock   <i class="fa-solid fa-right-long"></i></span>
+                    <span>In Stock</span>
                     <span class="status-indicator ${status.inStock ? 'status-on' : 'status-off'}"></span>
                 </div>
             `;
@@ -133,3 +242,4 @@ body {
     </script>
 </body>
 </html>
+
