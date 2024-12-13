@@ -11,16 +11,17 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.css">
     <script src="https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.js"></script>
     <style>
-       :root {
+:root {
   --primary-color: #009579;
+  --primary-dark: #007a63;
   --secondary-color: #10b981;
   --background-color: #f3f4f6;
   --text-color: #1f2937;
   --border-color: #e5e7eb;
   --transition-speed: 0.3s;
   --success-color: #2ecc71;
-    --warning-color: #f1c40f;
-    --danger-color: #e74c3c;
+  --warning-color: #f1c40f;
+  --danger-color: #e74c3c;
 }
 
 * {
@@ -34,10 +35,10 @@ body {
   background-color: var(--background-color);
   color: var(--text-color);
   line-height: 1.5;
-  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 10vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .container {
@@ -61,7 +62,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.4rem 0;
+  padding: 0.8rem 0;
 }
 
 .logo a {
@@ -105,19 +106,21 @@ header {
 }
 
 .main-content {
-  padding: 2rem 0;
-  margin-top: 40px; /* Adjust based on your header height */
+  padding: 2rem 0 0 0;
+  margin-top: 40px;
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
 }
 
 .wallet-balance {
-  background: linear-gradient(135deg, var(--primary-color), #007a63);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
   color: white;
   padding: 0.7rem;
   border-radius: 10px;
   margin-bottom: 0.4rem;
-  margin-top: 0.3rem;
+  margin-top: 0rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -127,16 +130,18 @@ header {
 }
 
 .wallet-balance .balance {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
 }
 
 form {
   background-color: #ffffff;
-  padding: 1.4rem;
+  padding: 1rem;
   border-radius: 10px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   width: 100%;
+  margin-bottom: 0;
+  flex-grow: 5;
 }
 
 form h3 {
@@ -146,7 +151,7 @@ form h3 {
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 label {
@@ -156,18 +161,18 @@ label {
 }
 
 input, select {
-    width: 100%;
-    padding: 0.55rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: all 0.3s ease;
+  width: 100%;
+  padding: 0.55rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
 }
 
 input:focus, select:focus {
-    border-color: #007BFF;
-    outline: none;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+  border-color: #007BFF;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
 }
 
 .send-btn {
@@ -183,13 +188,30 @@ input:focus, select:focus {
 }
 
 .send-btn:hover {
-  background-color: #007a63;
+  background-color: var(--primary-dark);
+}
+
+.footer {
+  background-color: var(--primary-color);
+  color: white;
+  text-align: center;
+  padding: 0.7rem 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.footer .copyright {
+  font-weight: 500;
+  font-size: 15px;
 }
 
 .modal {
   display: none;
   position: fixed;
-  z-index: 1000;
+  z-index: 1001;
   left: 0;
   top: 0;
   width: 100%;
@@ -332,19 +354,124 @@ input:focus, select:focus {
   width: 40%;
 }
 
-footer {
+.nav-links .dropdown {
+  position: relative;
+}
+
+.nav-links .dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(156, 153, 153, 0.2);
+  z-index: 1;
+  list-style: none;
+}
+
+.nav-links .dropdown-content li {
+  float: none;
+}
+
+.nav-links .dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+}
+
+.nav-links .dropdown-content a:hover {
+  background-color: #ddd;
+}
+
+.nav-links .dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.nav-links .dropbtn .fa-caret-down {
+  margin-left: 5px;
+}
+
+.alert {
+  background-color: var(--warning-color);
+  color: var(--text-color);
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1.2rem;
+  font-size: 0.9rem;
+}
+
+#loader {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pulse {
+  width: 60px;
+  height: 60px;
   background-color: var(--primary-color);
-  color: white;
-  text-align: center;
-  padding: 0.7rem 0;
+  border-radius: 50%;
+  position: absolute;
+  animation: pulse 1.5s ease-out infinite;
 }
 
-footer .copyright {
-  font-weight: 500;
-  font-size: 15px;
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
 }
 
+/* Desktop styles */
+@media (min-width: 769px) {
+  .main-content {
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .wallet-balance, form {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .wallet-balance {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Mobile styles */
 @media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
   .navbar {
     flex-wrap: wrap;
   }
@@ -360,6 +487,11 @@ footer .copyright {
   .logo {
     order: 1;
     flex-grow: 1;
+  }
+
+  .logo a {
+    font-size: 1.1rem;
+    margin-left: 0;
   }
 
   .nav-links {
@@ -394,27 +526,54 @@ footer .copyright {
     display: block;
     padding: 1rem;
     border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
   }
 
   .wallet-balance {
     text-align: center;
   }
 
+  .wallet-balance h3 {
+    font-size: 0.9rem;
+  }
+
+  .wallet-balance .balance {
+    font-size: 1.1rem;
+  }
+
   form {
-    padding: 1.5rem;
+    padding: 1rem;
+    margin-bottom: 0;
+  }
+
+  form h3 {
+    font-size: 1.1rem;
+  }
+
+  label {
+    font-size: 0.9rem;
+  }
+
+  input, select {
+    font-size: 0.9rem;
+  }
+
+  .send-btn {
+    font-size: 0.8rem;
   }
 
   .modal-content {
     width: 95%;
     margin: 10% auto;
+    padding: 1.5rem;
   }
 
   .orders-table {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
   }
 
   .orders-table th, .orders-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.25rem;
   }
 
   .account-info-header {
@@ -425,25 +584,21 @@ footer .copyright {
   .account-info-avatar {
     margin-bottom: 1rem;
   }
-}
 
-@media (min-width: 769px) and (max-width: 1024px) {
-  .container {
-    padding: 0 2rem;
+  .account-info-name {
+    font-size: 1.2rem;
   }
 
   .nav-links {
     margin-left: auto;
   }
-}
 
-@media (min-width: 1025px) {
-  .container {
-    padding: 0 3rem;
+  .dropdown-content {
+    position: static;
   }
 
-  .nav-links {
-    margin-left: auto;
+  footer .copyright {
+    font-size: 13px;
   }
 }
 
@@ -467,58 +622,28 @@ footer .copyright {
   }
 }
 
-.nav-links .dropdown {
-    position: relative;
-}
 
-.nav-links .dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: #f9f9f9;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(156, 153, 153, 0.2);
-    z-index: 1;
-    list-style: none;
-}
-
-.nav-links .dropdown-content li {
-    float: none;
-}
-
-.nav-links .dropdown-content a {
-    color: black;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-    text-align: left;
-}
-
-.nav-links .dropdown-content a:hover {
-    background-color: #ddd;
-}
-
-.nav-links .dropdown:hover .dropdown-content {
-    display: block;
-}
-
-.nav-links .dropbtn .fa-caret-down {
-    margin-left: 5px;
-}
-
-/* Mobile styles: Show the dropdown content when the dropdown is clicked */
-@media screen and (max-width: 768px) {
-  .dropdown-content {
-    position: static; /* Change position for mobile */
-  }
-}
 .alert {
     background-color: var(--warning-color);
     color: var(--text-color);
     padding: 0.75rem;
     border-radius: 4px;
     margin-bottom: 1.2rem;
-    font-size: 0.9rem;
+    font-size: 0.7.4rem;
 }
+
+footer {
+  background-color: var(--primary-color);
+  color: white;
+  text-align: center;
+  padding: 0.7rem 0;
+}
+
+footer .copyright {
+  font-weight: 500;
+  font-size: 15px;
+}
+
     </style>
 </head>
 <body>
@@ -534,8 +659,8 @@ footer .copyright {
                 <a href="#"><i class="fas fa-wifi"></i> Agent Portal</a>
             </div>
             <ul class="nav-links">
-                <li><a href="userdashboard.html"><i class="fa-solid fa-house-user"></i> Home</a></li>
-                <li><a href="login.html" id="loginLink"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                <li><a href="#"><i class="fa-solid fa-house-user"></i> Home</a></li>
+                <li><a href="agentlogin.html" id="loginLink"><i class="fas fa-sign-in-alt"></i> Login</a></li>
                 <li><a href="#" id="accountBtn"><i class="fas fa-id-badge"></i> Account</a></li>
                 <li><a href="#" id="viewOrdersBtn"><i class="fa-solid fa-box-open"></i> Orders</a></li>
                 <li><a href="#" id="walletBtn"><i class="fa-solid fa-cedi-sign"></i> Deposit</a></li>
@@ -680,12 +805,12 @@ footer .copyright {
         import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
     
         const firebaseConfig = {
-            apiKey: "AIzaSyB6GlfKxT-l08no6Q3rDWYRLZB6PCnE3is",
-    authDomain: "ckayagents.firebaseapp.com",
-    projectId: "ckayagents",
-    storageBucket: "ckayagents.firebasestorage.app",
-    messagingSenderId: "602589349191",
-    appId: "1:602589349191:web:cbf713b48483aeae327862"
+          apiKey: "AIzaSyB6GlfKxT-l08no6Q3rDWYRLZB6PCnE3is",
+        authDomain: "ckayagents.firebaseapp.com",
+        projectId: "ckayagents",
+        storageBucket: "ckayagents.firebasestorage.app",
+        messagingSenderId: "602589349191",
+        appId: "1:602589349191:web:cbf713b48483aeae327862"
         };
     
         const app = initializeApp(firebaseConfig);
@@ -945,7 +1070,7 @@ footer .copyright {
             signOut(auth).then(() => {
                 hideLoader();
                 notyf.success('Logged out successfully.');
-                window.location.href = 'login.html';
+                window.location.href = 'agentlogin.html';
             }).catch((error) => {
                 hideLoader();
                 notyf.error('Logout failed: ' + error.message);
