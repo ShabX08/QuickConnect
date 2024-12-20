@@ -1,511 +1,280 @@
-<!doctypehtml><html lang=en><meta charset=UTF-8><meta content="width=device-width,initial-scale=1"name=viewport><meta content="ie=edge"http-equiv=X-UA-Compatible><title>Quick Connect</title><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"rel=stylesheet><link href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css rel=stylesheet><script src=https://js.paystack.co/v1/inline.js></script><link href=https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.css rel=stylesheet><script src=https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.js></script><style>:root{--primary-color:#009579;--primary-dark:#007a63;--secondary-color:#10b981;--background-color:#f3f4f6;--text-color:#1f2937;--border-color:#e5e7eb;--card-background:#ffffff;--navbar-background:#ffffff;--form-background:#ffffff;--transition-speed:0.3s;--success-color:#2ecc71;--warning-color:#f1c40f;--danger-color:#e74c3c;--shadow-color:rgba(0, 0, 0, 0.1)}.dark-mode{--primary-color:#00b894;--primary-dark:#00a884;--secondary-color:#00cec9;--background-color:#1a202c;--text-color:#f7fafc;--border-color:#4a5568;--card-background:#2d3748;--navbar-background:#2d3748;--form-background:#2d3748;--shadow-color:rgba(0, 0, 0, 0.3)}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Montserrat,sans-serif;background-color:var(--background-color);color:var(--text-color);line-height:1.5;display:flex;flex-direction:column;height:120vh;overflow:hidden;transition:background-color var(--transition-speed),color var(--transition-speed)}#dark-mode-toggle{position:fixed;bottom:70px;right:20px;background-color:var(--primary-color);color:#fff;border:none;border-radius:30%;width:35px;height:35px;font-size:15px;cursor:pointer;transition:background-color var(--transition-speed);box-shadow:0 2px 10px var(--shadow-color);z-index:1000}#dark-mode-toggle:hover{background-color:var(--primary-dark)}.container{width:100%;max-width:1200px;margin:0 auto;padding:0 1rem}header{background-color:var(--navbar-background);box-shadow:0 2px 4px var(--shadow-color);position:fixed;top:0;left:0;right:0;z-index:1000;transition:background-color var(--transition-speed),box-shadow var(--transition-speed)}.navbar{display:flex;justify-content:space-between;align-items:center;padding:.8rem 0}.logo a{color:var(--primary-color);font-size:1.3rem;font-weight:700;text-decoration:none;margin-left:50px}.nav-links{display:flex;list-style:none;margin:0;padding:0}.nav-links li{margin-left:.8rem}.nav-links a{color:var(--text-color);text-decoration:none;font-weight:500;transition:color var(--transition-speed) ease}.nav-links a:hover{color:var(--primary-color)}.hamburger{display:none;cursor:pointer;background:0 0;border:none;font-size:1.5rem;color:var(--primary-color);transition:transform var(--transition-speed) ease}.main-content{padding:2rem 0 0 0;margin-top:40px;flex-grow:1;display:flex;flex-direction:column;overflow-y:auto}.wallet-balance{background:linear-gradient(135deg,var(--primary-color),var(--primary-dark));color:#fff;padding:.7rem;border-radius:10px;margin-bottom:.4rem;margin-top:0;box-shadow:0 4px 6px var(--shadow-color)}.wallet-balance h3{font-size:1rem;margin-bottom:0}.wallet-balance .balance{font-size:1.3rem;font-weight:700}form{background-color:var(--form-background);padding:1rem;border-radius:10px;box-shadow:0 2px 4px var(--shadow-color);width:100%;margin-bottom:0;flex-grow:5;transition:background-color var(--transition-speed),box-shadow var(--transition-speed)}form h3{margin-bottom:1rem;font-size:1.3rem;color:var(--primary-color)}.form-group{margin-bottom:1.2rem}label{display:block;margin-bottom:.5rem;font-weight:500;color:var(--text-color)}input,select{width:100%;padding:.55rem;border:1px solid var(--border-color);border-radius:8px;font-size:1rem;background-color:var(--card-background);color:var(--text-color);transition:all .3s ease}input:focus,select:focus{border-color:var(--primary-color);outline:0;box-shadow:0 0 5px rgba(0,123,255,.2)}.send-btn{background-color:var(--primary-color);color:#fff;border:none;padding:.5rem 1.5rem;border-radius:5px;font-size:.9rem;font-weight:600;cursor:pointer;transition:background-color var(--transition-speed) ease}.send-btn:hover{background-color:var(--primary-dark)}.footer{background-color:var(--primary-color);color:#fff;text-align:center;padding:.7rem 0;position:fixed;bottom:0;left:0;right:0;z-index:1000;box-shadow:0 -2px 4px var(--shadow-color)}.footer .copyright{font-weight:500;font-size:15px}.modal{display:none;position:fixed;z-index:1001;left:0;top:0;width:100%;margin-top:10%;height:100%;background-color:rgba(0,0,0,.5);overflow-y:auto}.modal-content{background-color:var(--card-background);margin:5% auto;padding:2rem;border-radius:10px;width:90%;max-width:800px;box-shadow:0 4px 6px var(--shadow-color);transition:background-color var(--transition-speed),box-shadow var(--transition-speed)}.close{color:var(--text-color);float:right;font-size:28px;font-weight:700;cursor:pointer}.close:hover{color:var(--primary-color)}#ordersModal .modal-content{max-width:90%}.orders-container{overflow-x:auto;width:100%}.orders-table{width:100%;border-collapse:separate;border-spacing:0;margin-top:1rem}.orders-table td,.orders-table th{padding:1rem;text-align:left;border-bottom:1px solid var(--border-color)}.orders-table th{background-color:var(--card-background);font-weight:600;position:sticky;top:0;z-index:10}.orders-table tr:nth-child(even){background-color:rgba(0,0,0,.05)}.orders-table tr:hover{background-color:rgba(0,0,0,.1)}.status{padding:.25rem .5rem;border-radius:3px;font-size:.75rem;font-weight:600;display:inline-block}.status-delivered{background-color:var(--success-color);color:#fff}.status-pending{background-color:var(--warning-color);color:var(--text-color)}.status-processing{background-color:var(--primary-color);color:#fff}.account-info-container{background-color:var(--card-background);border-radius:10px;box-shadow:0 2px 4px var(--shadow-color);padding:2rem;margin-top:2rem;transition:background-color var(--transition-speed),box-shadow var(--transition-speed)}.account-info-header{display:flex;align-items:center;margin-bottom:1.5rem}.account-info-avatar{width:64px;height:64px;border-radius:50%;background-color:var(--primary-color);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.5rem;font-weight:700;margin-right:1rem}.account-info-name{font-size:1.5rem;font-weight:600;color:var(--text-color)}.account-info-table{width:100%;border-collapse:collapse}.account-info-table td,.account-info-table th{padding:.75rem;text-align:left;border-bottom:1px solid var(--border-color)}.account-info-table th{font-weight:600;color:var(--primary-color);width:40%}.nav-links .dropdown{position:relative}.nav-links .dropdown-content{display:none;position:absolute;background-color:var(--card-background);min-width:160px;box-shadow:0 8px 16px 0 var(--shadow-color);z-index:1;list-style:none}.nav-links .dropdown-content li{float:none}.nav-links .dropdown-content a{color:var(--text-color);padding:12px 16px;text-decoration:none;display:block;text-align:left}.nav-links .dropdown-content a:hover{background-color:rgba(0,0,0,.1)}.nav-links .dropdown:hover .dropdown-content{display:block}.nav-links .dropbtn .fa-caret-down{margin-left:5px}.alert{background-color:var(--warning-color);color:var(--text-color);padding:.75rem;border-radius:4px;margin-bottom:1.2rem;font-size:.9rem}#loader{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(255,255,255,.8);z-index:9999;justify-content:center;align-items:center}.spinner{border:4px solid var(--border-color);border-top:4px solid var(--primary-color);border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.pulse{width:60px;height:60px;background-color:var(--primary-color);border-radius:50%;position:absolute;animation:pulse 1.5s ease-out infinite}@keyframes pulse{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.5);opacity:0}}@media (min-width:769px){.main-content{flex-direction:row;justify-content:center;align-items:flex-start}.wallet-balance,form{width:100%;max-width:400px}.wallet-balance{margin-bottom:1rem}}@media (max-width:768px){body{font-size:14px}.navbar{flex-wrap:wrap}.hamburger{display:block;order:2;margin-left:auto;padding-right:1rem;z-index:1001}.logo{order:1;flex-grow:1}.logo a{font-size:1.1rem;margin-left:0}.nav-links{position:fixed;top:0;right:-100%;height:100vh;width:250px;flex-direction:column;background-color:var(--navbar-background);padding-top:60px;transition:right var(--transition-speed) ease-in-out;box-shadow:-2px 0 5px var(--shadow-color)}.nav-links.active{right:0}.nav-links li{margin:0;text-align:left;opacity:0}.nav-links.active li{opacity:1;transition:opacity var(--transition-speed) ease-in-out}.nav-links a{display:block;padding:1rem;border-bottom:1px solid var(--border-color);font-size:.9rem}.wallet-balance{text-align:center}.wallet-balance h3{font-size:.9rem}.wallet-balance .balance{font-size:1.1rem}form{padding:1rem;margin-bottom:0}form h3{font-size:1.1rem}label{font-size:.9rem}input,select{font-size:.9rem}.send-btn{font-size:.8rem}.modal{display:none;position:fixed;z-index:1;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,.4)}.modal-content{background-color:var(--card-background);margin:10% auto;padding:15px;border:1px solid var(--border-color);width:90%;max-width:600px}.close{color:var(--text-color);float:right;font-size:24px;font-weight:700;cursor:pointer}.close:focus,.close:hover{color:var(--primary-color);text-decoration:none}h2{margin-top:0;font-size:18px}.orders-container{overflow-x:auto}.orders-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}.orders-table td,.orders-table th{border:1px solid var(--border-color);padding:4px;text-align:left;white-space:nowrap}.orders-table th{background-color:var(--primary-color);color:#fff;font-weight:700}.orders-table tr:nth-child(even){background-color:rgba(0,0,0,.05)}.orders-table tr:hover{background-color:rgba(0,0,0,.1)}@media screen and (max-width:480px){.modal-content{width:95%;margin:5% auto}.orders-table{font-size:10px}.orders-table td,.orders-table th{padding:2px}}.account-info-header{flex-direction:column;align-items:flex-start}.account-info-avatar{margin-bottom:1rem}.account-info-name{font-size:1.2rem}.nav-links{margin-left:auto}.dropdown-content{position:static}footer .copyright{font-size:13px}}@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}.alert{background-color:var(--warning-color);color:var(--text-color);padding:.75rem;border-radius:4px;margin-bottom:1.2rem;font-size:.74rem}.info-button{background-color:var(--primary-color);color:#fff;border:none;padding:5px 10px;font-size:18px;border-radius:5px;cursor:pointer;transition:background-color .3s,transform .3s;box-shadow:0 4px 6px var(--shadow-color)}.info-button:hover{background-color:var(--primary-dark);transform:translateY(-2px)}.popup{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.5);justify-content:center;align-items:center;z-index:1000}.popup-content{background-color:var(--card-background);padding:30px;border-radius:10px;box-shadow:0 4px 6px var(--shadow-color);max-width:600px;width:90%;max-height:90vh;overflow-y:auto}.popup-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.popup-title{font-size:24px;font-weight:700;color:var(--text-color)}.close-button{background:0 0;border:none;font-size:24px;cursor:pointer;color:var(--text-color);transition:color .3s}.close-button:hover{color:var(--primary-color)}.info-list{list-style-type:none}.info-item{background-color:rgba(0,0,0,.05);border-radius:8px;padding:15px;margin-bottom:15px;transition:transform .3s,box-shadow .3s}.info-item:hover{transform:translateY(-3px);box-shadow:0 4px 6px var(--shadow-color)}.info-item h3{font-size:18px;margin-bottom:10px;color:var(--text-color)}.info-item p{font-size:14px;color:var(--text-color)}.info-icon{margin-right:10px;color:var(--primary-color)}@media (max-width:480px){.popup-content{padding:20px}.popup-title{font-size:20px}.info-item h3{font-size:16px}.info-item p{font-size:12px}}</style><div class=loader id=loader style=display:none><div class=spinner></div><div class=pulse></div><span class=sr-only>Loading...</span></div><header><nav class="container navbar"><div class=logo><a href=# style=margin-left:20px><i class="fa-solid fa-tower-broadcast"></i> QuickConnect</a></div><ul class=nav-links><li><a href=userdashboard.html><i class="fa-solid fa-house-user"></i> Home</a><li><a href=login.html id=loginLink><i class="fas fa-sign-in-alt"></i> Login</a><li><a href=# id=accountBtn><i class="fas fa-id-badge"></i> Account</a><li><a href=# id=viewOrdersBtn><i class="fa-solid fa-box-open"></i> Orders</a><li><a href=# id=walletBtn><i class="fa-solid fa-cedi-sign"></i> Deposit</a><li><a href=status.html><i class="fas fa-spin fa-spinner"></i> Store status</a><li class=dropdown><a class=dropbtn><i class="fas fa-arrow-down"></i> Long press</a><ul class=dropdown-content><li><a href=https://chat.whatsapp.com/HmQMiV4lrKtDJYXLuZMCqK><i class="fa-whatsapp fab"></i> Updates</a><li><a href=report.html id=#><i class="fas fa-headset"></i> Support</a></ul></ul><button class=hamburger aria-label="Toggle menu"><i class="fa-solid fa-bars-progress"></i></button></nav></header><div class=main-content><section class=container><div class=wallet-balance><h3><i class="fas fa-wallet"></i> BALANCE</h3><div class=balance id=walletBalance>GHS 0.00</div></div><form id=bundleForm><h3><i class="fa-solid fa-truck-fast"></i> MTN OFFERS</h3><div class=form-group><label for=dataAmount><i class="fa-solid fa-bolt"></i> Quantity:</label> <select id=dataAmount><option value=1GB data-price=5.5>1GB - GHS 5.5<option value=2GB data-price=10.5>2GB - GHS 10.5<option value=3GB data-price=14.5>3GB - GHS 14.5<option value=4GB data-price=20>4GB - GHS 20<option value=5GB data-price=24>5GB - GHS 24<option value=6GB data-price=28>6GB - GHS 28</select></div><div class=form-group><label for=referrer><i class="fa-solid fa-user"></i> Referrer:</label> <select id=referrer required><option value="No Referrer">No Referrer<option value="DE TECH">DE TECH<option value="BEN (VYRUS)">BEN (VYRUS)</select></div><div class=form-group><label for=beneficiaryNumber><i class="fa-solid fa-hashtag"></i> Beneficiary Number:</label> <input id=beneficiaryNumber required placeholder="Enter beneficiary number"></div><button class=send-btn id=payBtn type=submit><i class="fa-solid fa-gauge"></i> SEND BUNDLE</button><button1 class=info-button style=margin-left:10px><i class="fa-solid fa-circle-exclamation"></i> Info</button1></form></section></div><div class=popup id=infoPopup><div class=popup-content><div class=popup-header><h2 class=popup-title>Important Information</h2><button class=close-button onclick=closePopup()>×</button></div><ul class=info-list><li class=info-item><h3><i class="fas info-icon fa-check-circle"></i>Check Website Status</h3><p>Before placing an order, always check our website status page for any ongoing issues or maintenance.<li class=info-item><h3><i class="fas info-icon fa-clock"></i>Report Delayed Orders</h3><p>If your order hasn't arrived within 30 minutes, please report it through our customer support channel.<li class=info-item><h3><i class="fas info-icon fa-utensils"></i>Join our community</h3><p>Make sure you join our community, <a href=https://chat.whatsapp.com/HmQMiV4lrKtDJYXLuZMCqK target=_blank>Join Now!</a>.</ul></div></div><script>const button = document.querySelector('.info-button');
-    const popup = document.getElementById('infoPopup');
+<!doctypehtml><html lang=en><meta charset=UTF-8><meta content="width=device-width,initial-scale=1"name=viewport><title>CkayCOnnect Admin Dashboard</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"rel=stylesheet><style>:root{--primary:#3b82f6;--primary-dark:#2563eb;--secondary:#10b981;--background:#f3f4f6;--surface:#ffffff;--text:#1f2937;--text-light:#6b7280;--border:#e5e7eb;--danger:#ef4444}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;background-color:var(--background);color:var(--text);line-height:1.5;font-size:14px}.container{max-width:1200px;margin:0 auto;padding:1rem}header{background-color:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1rem 0;margin-bottom:2rem}.header-content{display:flex;justify-content:space-between;align-items:center}h1{font-size:1.5rem;font-weight:600;color:var(--primary)}.search-container{display:flex;margin-bottom:1rem}.search-input{flex-grow:1;padding:.5rem;font-size:.875rem;border:1px solid var(--border);border-radius:.375rem 0 0 .375rem}.search-button{padding:.5rem 1rem;font-size:.875rem;background-color:var(--primary);color:#fff;border:none;border-radius:0 .375rem .375rem 0;cursor:pointer;transition:background-color .2s}.search-button:hover{background-color:var(--primary-dark)}.tabs{display:flex;margin-bottom:1.5rem}.tab{padding:.5rem 1rem;font-size:.875rem;font-weight:500;background-color:var(--surface);border:1px solid var(--border);cursor:pointer;transition:background-color .2s}.tab:first-child{border-radius:.375rem 0 0 .375rem}.tab:last-child{border-radius:0 .375rem .375rem 0}.tab.active{background-color:var(--primary);color:#fff;border-color:var(--primary)}.tab-content{display:none}.tab-content.active{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem}.card{background-color:var(--surface);border-radius:.5rem;box-shadow:0 1px 3px rgba(0,0,0,.1);overflow:hidden;transition:transform .2s}.card:hover{transform:translateY(-2px)}.card-header{padding:.75rem;background-color:var(--primary);color:#fff;font-size:.875rem;font-weight:500}.card-content{padding:.75rem;font-size:.75rem}.card-content p{margin-bottom:.25rem}.card-actions{display:flex;justify-content:space-between;margin-top:.75rem}.btn{padding:.25rem .5rem;font-size:.75rem;font-weight:500;border-radius:.25rem;cursor:pointer;transition:background-color .2s;border:none}.btn-primary{background-color:var(--primary);color:#fff}.btn-primary:hover{background-color:var(--primary-dark)}.btn-danger{background-color:var(--danger);color:#fff}.btn-danger:hover{background-color:#dc2626}.modal{display:none;position:fixed;z-index:1;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,.5)}.modal-content{background-color:var(--surface);margin:15% auto;padding:1.5rem;border-radius:.5rem;width:90%;max-width:500px}.close{color:var(--text-light);float:right;font-size:1.5rem;font-weight:700;cursor:pointer}.close:hover{color:var(--text)}form{display:flex;flex-direction:column;gap:1rem}label{font-weight:500;font-size:.875rem}input,select{width:100%;padding:.5rem;font-size:.875rem;border:1px solid var(--border);border-radius:.25rem}#seeMoreLessBtn{display:block;margin:1.5rem auto 0;background-color:var(--secondary);color:#fff}#seeMoreLessBtn:hover{background-color:#059669}@media (max-width:768px){.tab-content.active{grid-template-columns:1fr}}.site-status-section{margin-bottom:20px}.site-status-section h2{margin-bottom:10px}.status-card{background-color:#f9f9f9;border:1px solid #ddd;border-radius:4px;padding:15px}.status-item{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.switch{position:relative;display:inline-block;width:60px;height:34px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;transition:.4s;border-radius:34px}.slider:before{position:absolute;content:"";height:26px;width:26px;left:4px;bottom:4px;background-color:#fff;transition:.4s;border-radius:50%}input:checked+.slider{background-color:#2196f3}input:checked+.slider:before{transform:translateX(26px)}.referrer-name{font-weight:600;color:var(--secondary)}</style><header><div class="container header-content"><h1>CkayCOnnect Admin Dashboard</h1></div></header><div class=site-status-section><h2>Site Status</h2><div class=status-card><div class=status-item><span>Store Open</span> <label class=switch><input id=storeOpenSwitch type=checkbox> <span class=slider></span></label></div><div class=status-item><span>Fast Delivery</span> <label class=switch><input id=fastDeliverySwitch type=checkbox> <span class=slider></span></label></div><div class=status-item><span>In Stock</span> <label class=switch><input id=inStockSwitch type=checkbox> <span class=slider></span></label></div></div></div><div class=container><div class=search-container><input id=searchInput class=search-input placeholder="Search orders by ID..."> <button class=search-button onclick=searchOrders()>Search</button></div><div class=tabs><button class="active tab"data-tab=users>Users</button> <button class=tab data-tab=orders>Orders</button></div><div class="active tab-content"id=usersContent></div><div class=tab-content id=ordersContent></div><button class=btn onclick=toggleItems() id=seeMoreLessBtn>See More</button></div><div class=modal id=editModal><div class=modal-content><span class=close>×</span><h2 id=editTitle>Edit Item</h2><form id=editForm><input id=editId type=hidden> <input id=editOrderId type=hidden><div id=editFields></div><button class="btn btn-primary"type=submit>Save Changes</button></form></div></div><script src=https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js></script><script src=https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js></script><script>// Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDakCDZGnAD_rjThHpYS0t42GbL47tpUQo",
+            authDomain: "newshabxstore.firebaseapp.com",
+            projectId: "newshabxstore",
+            storageBucket: "newshabxstore.firebasestorage.app",
+            messagingSenderId: "152214073004",
+            appId: "1:152214073004:web:9764eee6660b1e181f3909"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    button.addEventListener('click', () => {
-        popup.style.display = 'flex';
-    });
+        let users = {};
+        let orders = {};
+        let filteredOrders = {};
+        let visibleItems = 6;
+        let currentTab = 'users';
 
-    function closePopup() {
-        popup.style.display = 'none';
-    }
+        // DOM Elements
+        const usersContent = document.getElementById('usersContent');
+        const ordersContent = document.getElementById('ordersContent');
+        const seeMoreLessBtn = document.getElementById('seeMoreLessBtn');
+        const editModal = document.getElementById('editModal');
+        const editForm = document.getElementById('editForm');
+        const closeBtn = document.getElementsByClassName('close')[0];
 
-    // Close the popup if the user clicks outside of it
-    window.addEventListener('click', (event) => {
-        if (event.target === popup) {
-            closePopup();
+        // Fetch data from Firebase
+        function fetchData() {
+            db.ref('users').on('value', (snapshot) => {
+                users = snapshot.val() || {};
+                renderUsers();
+            });
+
+            db.ref('orders').on('value', (snapshot) => {
+                orders = snapshot.val() || {};
+                filteredOrders = orders;
+                renderOrders();
+            });
         }
-    });</script><div class=modal id=accountModal><div class=modal-content><span class=close id=closeAccountModal>×</span><h2><i class="fas fa-user-circle"></i> Account Info</h2><table class=account-info-table><tr><th><i class="fas fa-user"></i> Name<td id=userName><tr><th><i class="fas fa-envelope"></i> Email<td id=userEmail><tr><th><i class="fas fa-phone"></i> Phone<td id=userPhone><tr><th><i class="fas fa-wallet"></i> Wallet Balance<td id=userWallet></table><button class=send-btn id=logoutBtn><i class="fas fa-sign-out-alt"></i> Logout</button></div></div><div class=modal id=ordersModal><div class=modal-content><span class=close id=closeOrdersModal>×</span><h2><i class="fas fa-box"></i> Orders</h2><div id=userInfo style=margin-top:15px></div><div class=orders-container><table class=orders-table><thead><tr><th>ID<th>Msisdn<th>Package<th>Amount<th>Value<th>Gateway<th>Status<th>Reference<th>Date<tbody id=orderItems></table></div></div></div><div class=modal id=walletModal><div class=modal-content><span class=close id=closeWalletModal>×</span><h2><i class="fas fa-wallet"></i> Add Money to Wallet</h2><form id=addMoneyForm><div class=form-group><label for=amount><i class="fas fa-money-bill-wave"></i> Amount (GHS):</label> <input id=amount required min=1 step=0.01 type=number></div><button class=send-btn type=submit><i class="fas fa-plus-circle"></i> Add Money</button></form><p style=margin-top:10px;font-size:small>A levy will be applied to this payment."</div></div><button id=dark-mode-toggle aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button><div class=footer><footer><div class=copyright><i class="fas fa-copyright"></i> 2023 ShabXStore. All Rights Reserved.</div></footer></div><script type=module>// Firebase configuration and initialization
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDakCDZGnAD_rjThHpYS0t42GbL47tpUQo",
-  authDomain: "newshabxstore.firebaseapp.com",
-  projectId: "newshabxstore",
-  storageBucket: "newshabxstore.firebasestorage.app",
-  messagingSenderId: "152214073004",
-  appId: "1:152214073004:web:9764eee6660b1e181f3909"
-};
+        // Render users
+        function renderUsers() {
+            usersContent.innerHTML = '';
+            const userEntries = Object.entries(users);
+            for (let i = 0; i < Math.min(visibleItems, userEntries.length); i++) {
+                const [userId, user] = userEntries[i];
+                const card = createCard('user', userId, user);
+                usersContent.appendChild(card);
+            }
+            updateSeeMoreLessBtn(userEntries.length);
+        }
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+        // Render orders
+        function renderOrders() {
+            ordersContent.innerHTML = '';
+            let count = 0;
+            
+            // Sort the orders by date in descending order
+            const sortedOrders = Object.entries(filteredOrders).flatMap(([userId, userOrders]) => 
+                Object.entries(userOrders).map(([orderId, order]) => ({userId, orderId, ...order}))
+            ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-const notyf = new Notyf({
-    duration: 3000,
-    position: { x: 'right', y: 'top'}
-});
-
-// Utility functions
-function showLoader() {
-    document.getElementById('loader').style.display = 'flex';
-}
-
-function hideLoader() {
-    document.getElementById('loader').style.display = 'none';
-}
-
-function checkAuth(action) {
-    if (!auth.currentUser) {
-        notyf.error('You have not logged into your account. Please log in to continue.');
-        return false;
-    }
-    return true;
-}
-
-// Authentication state change listener
-onAuthStateChanged(auth, (user) => {
-    updateUIForAuth(user);
-    if (user) {
-        fetchWalletBalance(user.uid);
-        listenForOrderUpdates(user.uid);
-    }
-});
-
-function updateUIForAuth(user) {
-    const loginLink = document.getElementById('loginLink');
-    const accountBtn = document.getElementById('accountBtn');
-    const viewOrdersBtn = document.getElementById('viewOrdersBtn');
-    const walletBtn = document.getElementById('walletBtn');
-
-    if (user) {
-        loginLink.style.display = 'none';
-        accountBtn.style.display = 'inline-block';
-        viewOrdersBtn.style.display = 'inline-block';
-        walletBtn.style.display = 'inline-block';
-    } else {
-        loginLink.style.display = 'inline-block';
-        accountBtn.style.display = 'none';
-        viewOrdersBtn.style.display = 'none';
-        walletBtn.style.display = 'none';
-    }
-}
-
-// Payment initiation
-function initiatePayment(e) {
-    e.preventDefault();
-    if (!checkAuth('initiate payment')) return;
-
-    showLoader();
-    const referrer = document.getElementById('referrer').value;
-    const dataAmount = document.getElementById('dataAmount').value;
-    const price = parseFloat(document.querySelector(`#dataAmount option[value="${dataAmount}"]`).getAttribute('data-price'));
-    const beneficiaryNumber = document.getElementById('beneficiaryNumber').value;
-
-    if (!referrer || !beneficiaryNumber || !dataAmount) {
-        hideLoader();
-        notyf.error('Please fill all fields.');
-        return;
-    }
-
-    const user = auth.currentUser;
-    if (user) {
-        get(ref(db, `users/${user.uid}/wallet`)).then((snapshot) => {
-            if (snapshot.exists()) {
-                const walletBalance = snapshot.val().balance || 0;
-                if (walletBalance >= price) {
-                    const newBalance = walletBalance - price;
-                    update(ref(db, `users/${user.uid}/wallet`), { balance: newBalance })
-                        .then(() => {
-                            const reference = 'WALLET_' + Date.now();
-                            saveOrder(reference, dataAmount, beneficiaryNumber, price, referrer);
-                            fetchWalletBalance(user.uid);
-                            resetForm();
-                            hideLoader();
-                            notyf.success('Payment successful! Data bundle purchased.');
-                        })
-                        .catch((error) => {
-                            hideLoader();
-                            console.error('Error updating wallet balance:', error);
-                            notyf.error('Failed to process payment. Please try again.');
-                        });
+            for (const order of sortedOrders) {
+                if (count < visibleItems) {
+                    const card = createCard('order', order.orderId, order, order.userId);
+                    ordersContent.appendChild(card);
+                    count++;
                 } else {
-                    hideLoader();
-                    notyf.error('Insufficient wallet balance. Please add money to your wallet.');
+                    break;
                 }
-            } else {
-                hideLoader();
-                notyf.error('Wallet not found. Please contact support.');
             }
-        }).catch((error) => {
-            hideLoader();
-            console.error('Error fetching wallet balance:', error);
-            notyf.error('Failed to fetch wallet balance. Please try again.');
-        });
-    } else {
-        hideLoader();
-        notyf.error('User not authenticated. Please log in.');
-    }
-}
+            updateSeeMoreLessBtn(sortedOrders.length);
+        }
 
-// Save order to database
-function saveOrder(reference, dataAmount, beneficiaryNumber, price, referrer) {
-    showLoader();
-    const user = auth.currentUser;
-    if (user) {
-        const orderRef = ref(db, `orders/${user.uid}/${reference}`);
-        set(orderRef, {
-            dataAmount,
-            beneficiaryNumber,
-            status: 'Pending',
-            paymentReference: reference,
-            date: new Date().toISOString(),
-            price,
-            userName: user.displayName || 'N/A',
-            userEmail: user.email,
-            referrer
-        }).then(() => {
-            hideLoader();
-            notyf.success('Order placed successfully!');
-            console.log('Order placed, sending Telegram notification...');
-            sendTelegramNotification();
-        }).catch((error) => {
-            hideLoader();
-            console.error('Error saving order:', error);
-            notyf.error('Failed to save order.');
-        });
-    } else {
-        hideLoader();
-        notyf.error('User not authenticated. Please log in.');
-    }
-}
+        // Create card element
+        function createCard(type, id, item, userId = null) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const user = type === 'order' ? users[userId] : null;
 
-function resetForm() {
-    document.getElementById('referrer').value = '';
-    document.getElementById('beneficiaryNumber').value = '';
-    document.getElementById('dataAmount').selectedIndex = 0;
-}
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>${type === 'user' ? item.name : `Order ID: ${id}`}</h3>
+                </div>
+                <div class="card-content">
+                    ${type === 'user' ? `
+                        <p><strong>Email:</strong> ${item.email}</p>
+                        <p><strong>Phone:</strong> ${item.phone}</p>
+                    ` : `
+                        <p><strong>User:</strong> ${user ? user.name : 'N/A'}</p>
+                        <p><strong>Beneficiary Number:</strong> ${item.beneficiaryNumber}</p>
+                        <p><strong>Data Amount:</strong> ${item.dataAmount}</p>
+                        <p><strong>Price:</strong> ${item.price}</p>
+                        <p><strong>Status:</strong> ${item.status}</p>
+                        <p><strong>Date:</strong> ${new Date(item.date).toLocaleDateString()}</p>
+                        <p><strong>Referrer:</strong> <span class="referrer-name">${item.referrer || 'N/A'}</span></p>
+                    `}
+                    <div class="card-actions">
+                        <button class="btn btn-primary" onclick="editItem('${type}', '${id}', ${userId ? `'${userId}'` : null})">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteItem('${type}', '${id}', ${userId ? `'${userId}'` : null})">Delete</button>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
 
-// Account details
-function showAccountDetails() {
-    if (!checkAuth('view account details')) return;
-
-    showLoader();
-    const user = auth.currentUser;
-    if (user) {
-        get(ref(db, `users/${user.uid}`)).then((snapshot) => {
-            hideLoader();
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                document.getElementById('userName').textContent = userData.name || 'No name';
-                document.getElementById('userEmail').textContent = user.email;
-                document.getElementById('userPhone').textContent = userData.phone || 'No phone number';
-                document.getElementById('userWallet').textContent = `GHS ${userData.wallet?.balance || '0.00'}`;
-                document.getElementById('accountModal').style.display = 'block';
-            } else {
-                notyf.error('User data not found.');
+        // Delete item
+        function deleteItem(type, id, userId = null) {
+            if (confirm(`Are you sure you want to delete this ${type}?`)) {
+                const path = type === 'user' ? `users/${id}` : `orders/${userId}/${id}`;
+                db.ref(path).remove()
+                    .then(() => alert(`${type} deleted successfully`))
+                    .catch((error) => alert(`Error deleting ${type}: ${error.message}`));
             }
-        }).catch((error) => {
-            hideLoader();
-            console.error('Error fetching user data:', error);
-            notyf.error('Failed to fetch user data.');
-        });
-    } else {
-        hideLoader();
-        notyf.error('User not authenticated.');
-    }
-}
+        }
 
-// Show orders
-function showOrders() {
-    if (!checkAuth('view orders')) return;
+        // Edit item
+        function editItem(type, id, userId = null) {
+            const editTitle = document.getElementById('editTitle');
+            const editFields = document.getElementById('editFields');
+            const editId = document.getElementById('editId');
+            const editOrderId = document.getElementById('editOrderId');
 
-    showLoader();
-    const user = auth.currentUser;
-    const userInfo = document.getElementById('userInfo');
-    const orderItems = document.getElementById('orderItems');
-    const ordersModal = document.getElementById('ordersModal');
-    
-    userInfo.innerHTML = '';
-    orderItems.innerHTML = '';
+            editTitle.textContent = `Edit ${type}`;
+            editId.value = userId || id;
+            editOrderId.value = type === 'order' ? id : '';
 
-    if (user) {
-        get(ref(db, `users/${user.uid}`)).then((userSnapshot) => {
-            if (userSnapshot.exists()) {
-                const userData = userSnapshot.val();
-                userInfo.innerHTML = `
-                    <p><strong>Name:</strong> ${userData.name || 'N/A'}</p>
-                    <p><strong>Email:</strong> ${user.email}</p>
-                    <p><strong>Phone:</strong> ${userData.phone || 'N/A'}</p>
-                `;
-            }
+            const item = type === 'user' ? users[id] : orders[userId][id];
+            editFields.innerHTML = type === 'user' ? `
+                <label for="editName">Name</label>
+                <input type="text" id="editName" value="${item.name}" required>
+                <label for="editEmail">Email</label>
+                <input type="email" id="editEmail" value="${item.email}" required>
+                <label for="editPhone">Phone</label>
+                <input type="tel" id="editPhone" value="${item.phone}" required>
+            ` : `
+                <label for="editBeneficiaryNumber">Beneficiary Number</label>
+                <input type="text" id="editBeneficiaryNumber" value="${item.beneficiaryNumber}" required>
+                <label for="editDataAmount">Data Amount</label>
+                <input type="text" id="editDataAmount" value="${item.dataAmount}" required>
+                <label for="editPrice">Price</label>
+                <input type="text" id="editPrice" value="${item.price}" required>
+                <label for="editStatus">Status</label>
+                <select id="editStatus" required>
+                    <option value="Pending" ${item.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                    <option value="Processing" ${item.status === 'Processing' ? 'selected' : ''}>Processing</option>
+                    <option value="Delivered" ${item.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                    <option value="Cancelled" ${item.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                </select>
+                <label for="editReferrer">Referrer</label>
+                <input type="text" id="editReferrer" value="${item.referrer || ''}" required>
+            `;
 
-            get(ref(db, `orders/${user.uid}`))
-                .then((orderSnapshot) => {
-                    hideLoader();
-                    if (orderSnapshot.exists()) {
-                        const orders = orderSnapshot.val();
-                        let orderArray = Object.entries(orders).map(([orderId, order]) => ({
-                            id: orderId,
-                            ...order
-                        }));
-                        
-                        orderArray.sort((a, b) => new Date(b.date) - new Date(a.date));
+            editModal.style.display = 'block';
+        }
 
-                        let orderHtml = '';
-                        for (const order of orderArray) {
-                            orderHtml += `
-                                <tr>
-                                    <td>${order.id}</td>
-                                    <td>${order.beneficiaryNumber}</td>
-                                    <td>${order.dataAmount}</td>
-                                    <td>GHS ${order.price}</td>
-                                    <td>${order.dataAmount}</td>
-                                    <td>WEB</td>
-                                    <td><span class="status status-${order.status.toLowerCase()}">${order.status}</span></td>
-                                    <td>${order.paymentReference}</td>
-                                    <td>${new Date(order.date).toLocaleString()}</td>
-                                </tr>
-                            `;
-                        }
-                        orderItems.innerHTML = orderHtml;
-                    } else {
-                        orderItems.innerHTML = '<tr><td colspan="9">No orders found.</td></tr>';
-                    }
-                    ordersModal.style.display = 'block';
+        // Update item
+        editForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const type = document.getElementById('editOrderId').value ? 'order' : 'user';
+            const id = document.getElementById('editId').value;
+            const orderId = document.getElementById('editOrderId').value;
+
+            const updateData = type === 'user' ? {
+                name: document.getElementById('editName').value,
+                email: document.getElementById('editEmail').value,
+                phone: document.getElementById('editPhone').value
+            } : {
+                beneficiaryNumber: document.getElementById('editBeneficiaryNumber').value,
+                dataAmount: document.getElementById('editDataAmount').value,
+                price: document.getElementById('editPrice').value,
+                status: document.getElementById('editStatus').value,
+                referrer: document.getElementById('editReferrer').value
+            };
+
+            const path = type === 'user' ? `users/${id}` : `orders/${id}/${orderId}`;
+            db.ref(path).update(updateData)
+                .then(() => {
+                    alert(`${type} updated successfully`);
+                    editModal.style.display = 'none';
                 })
-                .catch((error) => {
-                    hideLoader();
-                    console.error('Error fetching orders:', error);
-                    notyf.error('Failed to load orders.');
-                });
-        }).catch((error) => {
-            hideLoader();
-            console.error('Error fetching user data:', error);
-            notyf.error('Failed to load user data.');
+                .catch((error) => alert(`Error updating ${type}: ${error.message}`));
         });
-    } else {
-        hideLoader();
-        notyf.error('User not authenticated.');
-    }
-}
 
-// Logout function
-function logout() {
-    showLoader();
-    signOut(auth).then(() => {
-        hideLoader();
-        notyf.success('Logged out successfully.');
-        window.location.href = 'login.html';
-    }).catch((error) => {
-        hideLoader();
-        notyf.error('Logout failed: ' + error.message);
-    });
-}
-
-// Modal close functions
-function closeAccountModal() {
-    document.getElementById("accountModal").style.display = 'none';
-}
-
-function closeOrdersModal() {
-    document.getElementById("ordersModal").style.display = 'none';
-}
-
-function closeWalletModal() {
-    document.getElementById("walletModal").style.display = 'none';
-}
-
-function showWalletModal() {
-    if (!checkAuth('add money to wallet')) return;
-    document.getElementById("walletModal").style.display = 'block';
-}
-
-// Wallet functions
-function fetchWalletBalance(userId) {
-    get(ref(db, `users/${userId}/wallet`)).then((snapshot) => {
-        if (snapshot.exists()) {
-            const balance = snapshot.val().balance || 0;
-            document.getElementById('walletBalance').textContent = `GHS ${balance.toFixed(2)}`;
-        } else {
-            document.getElementById('walletBalance').textContent = 'GHS 0.00';
-        }
-    }).catch((error) => {
-        console.error('Error fetching wallet balance:', error);
-        notyf.error('Failed to fetch wallet balance.');
-    });
-}
-
-function addMoneyToWallet(e) {
-    e.preventDefault();
-    if (!checkAuth('add money to wallet')) return;
-
-    const amount = parseFloat(document.getElementById('amount').value);
-    if (isNaN(amount) || amount <= 0) {
-        notyf.error('Please enter a valid amount.');
-        return;
-    }
-
-    showLoader();
-    const user = auth.currentUser;
-    const levy = amount * 0.06; // 4% levy
-    const totalAmount = amount + levy;
-
-    const handler = PaystackPop.setup({
-        key: 'pk_live_0e70d8a9612b98c92761e3478abc47f900338df2',
-        email: user.email,
-        amount: totalAmount * 100, // Convert to pesewas
-        currency: 'GHS',
-        callback: function(response) {
-            updateWalletBalance(user.uid, amount, response.reference, levy);
-        },
-        onClose: function() {
-            hideLoader();
-            notyf.error('Transaction cancelled.');
-        }
-    });
-    handler.openIframe();
-}
-
-function updateWalletBalance(userId, amount, reference, levy) {
-    const walletRef = ref(db, `users/${userId}/wallet`);
-    get(walletRef).then((snapshot) => {
-        const currentBalance = snapshot.exists() ? snapshot.val().balance || 0 : 0;
-        const newBalance = currentBalance + amount;
-        return set(walletRef, {
-            balance: newBalance,
-            lastTransaction: {
-                amount: amount,
-                levy: levy,
-                date: new Date().toISOString(),
-                reference: reference
+        // Search orders
+        function searchOrders() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            filteredOrders = {};
+            for (const [userId, userOrders] of Object.entries(orders)) {
+                for (const [orderId, order] of Object.entries(userOrders)) {
+                    if (orderId.toLowerCase().includes(searchTerm)) {
+                        if (!filteredOrders[userId]) {
+                            filteredOrders[userId] = {};
+                        }
+                        filteredOrders[userId][orderId] = order;
+                    }
+                }
             }
-        });
-    }).then(() => {
-        hideLoader();
-        notyf.success(`Successfully added GHS ${amount.toFixed(2)} to your wallet. A levy of GHS ${levy.toFixed(2)} was applied.`);
-        fetchWalletBalance(userId);
-        closeWalletModal();
-    }).catch((error) => {
-        hideLoader();
-        console.error('Error updating wallet balance:', error);
-        notyf.error('Failed to update wallet balance.');
-    });
-}
+            visibleItems = 6;
+            renderOrders();
+        }
 
-function listenForOrderUpdates(userId) {
-    const ordersRef = ref(db, `orders/${userId}`);
-    onValue(ordersRef, (snapshot) => {
-        if (snapshot.exists()) {
-            const orders = snapshot.val();
-            for (const [orderId, order] of Object.entries(orders)) {
-                updateOrderStatus(orderId, order.status);
+        // Toggle items (See More / See Less)
+        function toggleItems() {
+            const totalItems = currentTab === 'users' ? Object.keys(users).length : Object.values(filteredOrders).flat().length;
+            if (visibleItems < totalItems) {
+                visibleItems = totalItems;
+            } else {
+                visibleItems = 6;
+            }
+            currentTab === 'users' ? renderUsers() : renderOrders();
+        }
+
+        // Update See More / See Less button
+        function updateSeeMoreLessBtn(totalItems) {
+            if (visibleItems < totalItems) {
+                seeMoreLessBtn.textContent = 'See More';
+                seeMoreLessBtn.style.display = 'block';
+            } else if (visibleItems > 6) {
+                seeMoreLessBtn.textContent = 'See Less';
+                seeMoreLessBtn.style.display = 'block';
+            } else {
+                seeMoreLessBtn.style.display = 'none';
             }
         }
-    });
-}
 
-function updateOrderStatus(orderId, status) {
-    const statusElement = document.querySelector(`#orderItems tr:has(td:first-child:contains("${orderId}")) .status`);
-    if (statusElement) {
-        statusElement.className = `status status-${status.toLowerCase()}`;
-        statusElement.textContent = status;
-    }
-}
-
-// Telegram notification
-const TELEGRAM_BOT_TOKEN = '7508266654:AAEUIXI7J3WChv_YBT31KBRjaRUGv0gewE8';
-const CHAT_ID = '7513572473';
-
-async function sendTelegramNotification() {
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-    const data = {
-        chat_id: CHAT_ID,
-        text: "New order received!",
-        parse_mode: 'HTML'
-    };
-
-    try {
-        console.log("Sending Telegram notification...");
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                const tabId = tab.dataset.tab;
+                document.getElementById(`${tabId}Content`).classList.add('active');
+                currentTab = tabId;
+                visibleItems = 6;
+                if (tabId === 'users') {
+                    renderUsers();
+                } else if (tabId === 'orders') {
+                    renderOrders();
+                }
+            });
         });
 
-        const result = await response.json();
+        // Modal functionality
+        closeBtn.onclick = () => editModal.style.display = 'none';
+        window.onclick = (event) => {
+            if (event.target == editModal) editModal.style.display = 'none';
+        };
 
-        if (response.ok) {
-            console.log('Telegram notification sent:', result);
-        } else {
-            console.error('Failed to send Telegram notification:', result);
+        // Site Status Management
+        function initializeSiteStatus() {
+            const storeStatusRef = firebase.database().ref('storeStatus');
+            const storeOpenSwitch = document.getElementById('storeOpenSwitch');
+            const fastDeliverySwitch = document.getElementById('fastDeliverySwitch');
+            const inStockSwitch = document.getElementById('inStockSwitch');
+
+            function updateStatus(key, value) {
+                const updates = {};
+                updates[key] = value;
+                storeStatusRef.update(updates);
+            }
+
+            storeOpenSwitch.addEventListener('change', () => updateStatus('isOpen', storeOpenSwitch.checked));
+            fastDeliverySwitch.addEventListener('change', () => updateStatus('fastDelivery', fastDeliverySwitch.checked));
+            inStockSwitch.addEventListener('change', () => updateStatus('inStock', inStockSwitch.checked));
+
+            storeStatusRef.on('value', (snapshot) => {
+                const status = snapshot.val() || { isOpen: false, fastDelivery: false, inStock: false };
+                storeOpenSwitch.checked = status.isOpen;
+                fastDeliverySwitch.checked = status.fastDelivery;
+                inStockSwitch.checked = status.inStock;
+            });
         }
-    } catch (error) {
-        console.error('Error sending Telegram notification:', error);
-    }
-}
 
-// Event Listeners
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById("bundleForm").addEventListener("submit", initiatePayment);
-    document.getElementById("accountBtn").addEventListener("click", showAccountDetails);
-    document.getElementById("viewOrdersBtn").addEventListener("click", showOrders);
-    document.getElementById("logoutBtn").addEventListener("click", logout);
-    document.getElementById("closeAccountModal").addEventListener("click", closeAccountModal);
-    document.getElementById("closeOrdersModal").addEventListener("click", closeOrdersModal);
-    document.getElementById("walletBtn").addEventListener("click", showWalletModal);
-    document.getElementById("closeWalletModal").addEventListener("click", closeWalletModal);
-    document.getElementById("addMoneyForm").addEventListener("submit", addMoneyToWallet);
-
-    // Mobile menu toggle
-    const hamburger = document.querySelector('.hamburger');
-    const navLinks = document.querySelector('.nav-links');
-
-    hamburger.addEventListener('click', () => {
-        navLinks.classList.toggle('active');
-        hamburger.classList.toggle('active');
-    });
-
-    // Close mobile menu when a link is clicked
-    const links = document.querySelector('.nav-links').getElementsByTagName('a');
-    for (let i = 0; i < links.length; i++) {
-        links[i].addEventListener('click', () => {
-            navLinks.classList.remove('active');
-            hamburger.classList.remove('active');
-        });
-    }
-
-    // Close modals when clicking outside
-    window.onclick = function(event) {
-        if (event.target.className === 'modal') {
-            event.target.style.display = "none";
-        }
-    }
-});
-
-// Initialize the page
-updateUIForAuth(auth.currentUser);
-if (auth.currentUser) {
-    fetchWalletBalance(auth.currentUser.uid);
-    listenForOrderUpdates(auth.currentUser.uid);
-}
-
-// Dark mode toggle functionality
-const darkModeToggle = document.getElementById('dark-mode-toggle');
-const body = document.body;
-const icon = darkModeToggle.querySelector('i');
-
-function toggleDarkMode() {
-    body.classList.toggle('dark-mode');
-    if (body.classList.contains('dark-mode')) {
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-        localStorage.setItem('darkMode', 'enabled');
-    } else {
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-        localStorage.setItem('darkMode', 'disabled');
-    }
-}
-
-// Check for user's preference
-if (localStorage.getItem('darkMode') === 'enabled') {
-    body.classList.add('dark-mode');
-    icon.classList.remove('fa-moon');
-    icon.classList.add('fa-sun');
-}
-
-darkModeToggle.addEventListener('click', toggleDarkMode);</script>
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            initializeSiteStatus();
+        });</script>
