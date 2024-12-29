@@ -14,11 +14,16 @@
             font-family: 'Poppins', sans-serif;
         }
         .spinner {
-            width: 40px;
-            height: 40px;
+            width: 100px;
+            height: 100px;
             background-image: url('https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif');
             background-size: contain;
             background-repeat: no-repeat;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .btn-hover:hover {
             filter: brightness(110%);
@@ -80,14 +85,13 @@
 
         <!-- Bundle Purchase Section -->
         <div id="bundle-purchase-section" class="hidden">
-            <h2 class="text-white text-xl sm:text-2xl font-semibold mb-3"><span class="material-icons mr-1 align-middle">shopping_cart</span>Purchase Bundle</h2>
             <div class="flex items-center mb-3 sm:mb-4">
                 <img src="https://storage.googleapis.com/a1aa/image/05S6wOFvzhqLJp5bN2mUJ44neY6ge1sDZrNMviWL3Bv3tifnA.jpg" alt="MTN logo" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full" width="32" height="32"/>
-                <h1 class="text-yellow-400 text-lg sm:text-xl font-bold ml-2">Yello offers</h1>
+                <h1 class="text-yellow-400 text-lg sm:text-xl font-bold ml-2">MTN OFFERS</h1>
             </div>
             <div class="bg-green-500 text-white p-2 rounded mb-3 sm:mb-4">
                 <span class="material-icons mr-1 align-middle">info</span>
-                "Time is money, friend!" Your bundle will arrive within the next 20 minutes.
+             Your bundle will arrive within the next 20 minutes.
             </div>
             <div class="mb-3 sm:mb-4">
                 <label for="phone-number" class="block text-gray-400 mb-1 sm:mb-2"><span class="material-icons mr-1 align-middle text-sm">phone</span>PHONE NUMBER</label>
@@ -101,13 +105,8 @@
                     <option value="at">AirtelTigo</option>
                 </select>
             </div>
-            <div class="mb-3 sm:mb-4">
-                <label for="bundle-volume" class="block text-gray-400 mb-1 sm:mb-2"><span class="material-icons mr-1 align-middle text-sm">data_usage</span>BUNDLE VOLUME</label>
-                <select id="bundle-volume" class="w-full p-2 bg-gray-700 text-gray-300 rounded text-sm">
-                    <option value="">Select package</option>
-                </select>
-            </div>
-            <div id="bundle-price" class="mb-3 sm:mb-4 text-gray-300"></div>
+            <div id="bundle-volume-container"></div>
+            <div style="margin-top: 10px;" id="bundle-price" class="mb-3 sm:mb-4 text-gray-300"></div>
             <div class="flex space-x-2">
                 <button id="send-bundle" class="bg-red-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm btn-hover"><span class="material-icons mr-1 align-middle text-sm">send</span>Send Bundle</button>
             </div>
@@ -290,14 +289,26 @@
         const loader = document.getElementById('loader');
         const orderReceipt = document.getElementById('order-receipt');
 
-        // Network prices (GHS per GB)
-        const networkPrices = {
-            mtn: 10,
-            at: 8
+        // Network prices and volumes
+        const networkData = {
+            mtn: {
+                prices: {
+                    '1GB': 5.50,
+                    '2GB': 12,
+                    '5GB': 27,
+                    '10GB': 27
+                },
+                volumes: ['1GB', '2GB', '5GB', '10GB']
+            },
+            at: {
+                prices: {
+                    '1GB': 5, '2GB': 9, '3GB': 13, '4GB': 18, '5GB': 20,
+                    '6GB': 23, '7GB': 27, '8GB': 35, '9GB': 36, '10GB': 42,
+                    '15GB': 61.5, '20GB': 80, '50GB': 140, '100GB': 250,
+                },
+                volumes: ['1GB', '2GB', '3GB', '4GB', '5GB', '6GB', '7GB', '8GB', '9GB', '10GB', '15GB', '20GB', '50GB', '100GB']
+            }
         };
-
-        // Bundle volumes (in GB)
-        const bundleVolumes = [1, 2, 3, 5, 10];
 
         // Helper function to hide all pages
         function hideAllPages() {
@@ -486,11 +497,6 @@
             setActiveNavItem('data-icon');
         });
 
-        // Agent Portal button
-        document.getElementById('agent-portal-button').addEventListener('click', () => {
-            notyf.info('Agent Portal functionality coming soon!');
-        });
-
         // Add this new function to hide all sections
         function hideAllSections() {
             document.getElementById('home-section').classList.add('hidden');
@@ -501,22 +507,40 @@
         // Network selection change handler
         document.getElementById('network').addEventListener('change', updateBundleOptions);
 
-        // Bundle volume selection change handler
-        document.getElementById('bundle-volume').addEventListener('change', updatePrice);
-
         // Update bundle options based on selected network
         function updateBundleOptions() {
             const network = document.getElementById('network').value;
-            const bundleVolumeSelect = document.getElementById('bundle-volume');
-            bundleVolumeSelect.innerHTML = '<option value="">Select package</option>';
+            const bundleVolumeContainer = document.getElementById('bundle-volume-container');
+            
+            // Clear previous content
+            bundleVolumeContainer.innerHTML = '';
 
             if (network) {
-                bundleVolumes.forEach(volume => {
+                // Create new select element
+                const bundleVolumeSelect = document.createElement('select');
+                bundleVolumeSelect.id = 'bundle-volume';
+                bundleVolumeSelect.className = 'w-full p-2 bg-gray-700 text-gray-300 rounded text-sm';
+                bundleVolumeSelect.innerHTML = '<option value="">Select package</option>';
+
+                networkData[network].volumes.forEach(volume => {
                     const option = document.createElement('option');
                     option.value = volume;
-                    option.textContent = `${volume}GB`;
+                    option.textContent = `${volume} - GHS ${networkData[network].prices[volume].toFixed(2)}`;
                     bundleVolumeSelect.appendChild(option);
                 });
+
+                // Create label for the new select
+                const label = document.createElement('label');
+                label.htmlFor = 'bundle-volume';
+                label.className = 'block text-gray-400 mb-1 sm:mb-2';
+                label.innerHTML = '<span class="material-icons mr-1 align-middle text-sm">data_usage</span>BUNDLE VOLUME';
+
+                // Append the new elements
+                bundleVolumeContainer.appendChild(label);
+                bundleVolumeContainer.appendChild(bundleVolumeSelect);
+
+                // Add event listener to update price
+                bundleVolumeSelect.addEventListener('change', updatePrice);
             }
 
             updatePrice();
@@ -525,11 +549,12 @@
         // Update price based on selected network and volume
         function updatePrice() {
             const network = document.getElementById('network').value;
-            const volume = document.getElementById('bundle-volume').value;
+            const volumeSelect = document.getElementById('bundle-volume');
             const priceElement = document.getElementById('bundle-price');
 
-            if (network && volume) {
-                const price = networkPrices[network] * volume;
+            if (network && volumeSelect && volumeSelect.value) {
+                const volume = volumeSelect.value;
+                const price = networkData[network].prices[volume];
                 priceElement.textContent = `Price: GHS ${price.toFixed(2)}`;
             } else {
                 priceElement.textContent = '';
@@ -540,18 +565,20 @@
         document.getElementById('send-bundle').addEventListener('click', () => {
             const network = document.getElementById('network').value;
             const phoneNumber = document.getElementById('phone-number').value;
-            const bundleVolume = document.getElementById('bundle-volume').value;
-
-            if (network === '' || bundleVolume === '' || phoneNumber === '') {
+            const bundleVolumeSelect = document.getElementById('bundle-volume');
+            
+            if (!bundleVolumeSelect || network === '' || bundleVolumeSelect.value === '' || phoneNumber === '') {
                 notyf.error('Please select a network, enter phone number, and select a package');
                 return;
             }
+
+            const bundleVolume = bundleVolumeSelect.value;
 
             // Show loader
             loader.classList.remove('hidden');
 
             // Calculate price
-            const bundlePrice = networkPrices[network] * bundleVolume;
+            const bundlePrice = networkData[network].prices[bundleVolume];
 
             // Initialize Paystack payment
             const handler = PaystackPop.setup({
@@ -584,7 +611,7 @@
 
             const payload = {
                 phone: phone,
-                volume: volume * 1000, // Convert GB to MB
+                volume: parseFloat(volume) * 1000, // Convert GB to MB
                 reference: reference,
                 referrer: auth.currentUser.phoneNumber || '',
                 webhook: 'https://your-webhook-url.com' // Replace with your actual webhook URL
@@ -619,12 +646,13 @@
             const orderData = {
                 network: network,
                 phoneNumber: phone,
-                bundleVolume: volume + 'GB',
-                price: networkPrices[network] * volume,
+                bundleVolume: volume,
+                price: networkData[network].prices[volume],
                 userId: auth.currentUser.uid,
                 transactionReference: reference,
                 transactionId: transactionId,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                status: 'pending'
             };
 
             push(ref(database, 'orders'), orderData)
@@ -639,16 +667,17 @@
         // Function to display order receipt
         function displayOrderReceipt(network, phone, volume, reference, transactionId) {
             const receiptContent = document.getElementById('receipt-content');
-            const price = networkPrices[network] * volume;
+            const price = networkData[network].prices[volume];
             
             receiptContent.innerHTML = `
                 <p><strong>Network:</strong> ${network.toUpperCase()}</p>
                 <p><strong>Phone Number:</strong> ${phone}</p>
-                <p><strong>Bundle Volume:</strong> ${volume}GB</p>
+                <p><strong>Bundle Volume:</strong> ${volume}</p>
                 <p><strong>Price:</strong> GHS ${price.toFixed(2)}</p>
                 <p><strong>Transaction Reference:</strong> ${reference}</p>
                 <p><strong>Transaction ID:</strong> ${transactionId}</p>
                 <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+                <p><strong>Status:</strong> Pending</p>
             `;
 
             hideAllSections();
@@ -727,7 +756,8 @@
                                         <p class="mb-1"><span class="material-icons mr-1 align-middle text-xs">wifi</span><strong>Bundle:</strong> ${order.bundleVolume}</p>
                                         <p class="mb-1"><span class="material-icons mr-1 align-middle text-xs">attach_money</span><strong>Price:</strong> GHS ${order.price.toFixed(2)}</p>
                                         <p class="mb-1"><span class="material-icons mr-1 align-middle text-xs">event</span><strong>Date:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
-                                        <p><span class="material-icons mr-1 align-middle text-xs">tag</span><strong>Ref:</strong> ${order.transactionReference}</p>
+                                        <p class="mb-1"><span class="material-icons mr-1 align-middle text-xs">tag</span><strong>Ref:</strong> ${order.transactionReference}</p>
+                                        <p><span class="material-icons mr-1 align-middle text-xs">info</span><strong>Status:</strong> ${order.status || 'Pending'}</p>
                                     </div>
                                 `;
                             }
@@ -814,10 +844,42 @@
                 return;
             }
 
-            // Here you would typically send this message to your backend
-            // For now, we'll just show a success message
-            notyf.success('Message sent to support team');
-            document.getElementById('support-message').value = '';
+            const user = auth.currentUser;
+            if (!user) {
+                notyf.error('You must be logged in to send a message');
+                return;
+            }
+
+            // Get user data from the database
+            get(ref(database, 'users/' + user.uid))
+                .then((snapshot) => {
+                    const userData = snapshot.val();
+                    if (userData) {
+                        // Save the message to the database
+                        const supportMessage = {
+                            userId: user.uid,
+                            name: userData.name,
+                            email: userData.email,
+                            phone: userData.phone,
+                            message: message,
+                            timestamp: new Date().toISOString()
+                        };
+
+                        push(ref(database, 'support_messages'), supportMessage)
+                            .then(() => {
+                                notyf.success('Message sent to support team');
+                                document.getElementById('support-message').value = '';
+                            })
+                            .catch((error) => {
+                                notyf.error('Error sending message: ' + error.message);
+                            });
+                    } else {
+                        notyf.error('User data not found');
+                    }
+                })
+                .catch((error) => {
+                    notyf.error('Error fetching user data: ' + error.message);
+                });
         });
     </script>
 </body>
