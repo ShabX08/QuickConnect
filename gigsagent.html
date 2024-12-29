@@ -28,25 +28,40 @@
     </style>
 </head>
 <body class="bg-gray-900 flex flex-col items-center justify-between min-h-screen text-sm sm:text-base">
-    <nav class="bg-gray-800 w-full py-2 sm:py-4 flex justify-center items-center fixed top-0 z-10">
-        <h1 class="text-yellow-400 text-lg sm:text-xl font-bold"><span class="material-icons mr-1 align-middle text-base sm:text-lg">bolt</span>Gigs Hub - Agent Portal</h1>
+    <nav class="bg-gray-800 w-full py-2 sm:py-4 flex justify-between items-center fixed top-0 z-10 px-4">
+        <h1 class="text-yellow-400 text-lg sm:text-xl font-bold">
+            <span class="material-icons mr-1 align-middle text-base sm:text-lg">bolt</span>Gigs Hub - Agent Portal
+        </h1>
+        <a href="index.html" class="bg-yellow-400 text-gray-900 px-4 py-2 rounded text-sm font-semibold btn-hover">
+            <span class="material-icons mr-1 align-middle text-sm">home</span>Main Page
+        </a>
     </nav>
 
     <div id="main-content" class="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-md mt-14 sm:mt-20 mx-2 sm:mx-4">
         <div id="activation-section" class="hidden">
-            <h2 class="text-white text-xl sm:text-2xl font-semibold mb-3"><span class="material-icons mr-1 align-middle">vpn_key</span>Activate Agent Portal</h2>
+            <h2 class="text-white text-xl sm:text-2xl font-semibold mb-3">
+                <span class="material-icons mr-1 align-middle">vpn_key</span>Activate Agent Portal
+            </h2>
             <p class="text-gray-300 mb-4">Activate your agent portal for exclusive discounts on data bundles.</p>
-            <button id="activate-button" class="bg-green-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm btn-hover"><span class="material-icons mr-1 align-middle text-sm">credit_card</span>Pay GHS 50 to Activate</button>
+            <button id="activate-button" class="bg-green-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm btn-hover">
+                <span class="material-icons mr-1 align-middle text-sm">credit_card</span>Pay GHS 50 to Activate
+            </button>
         </div>
 
         <div id="bundle-purchase-section" class="hidden">
-            <h2 class="text-white text-xl sm:text-2xl font-semibold mb-3"><span class="material-icons mr-1 align-middle">shopping_cart</span>Purchase Bundle</h2>
+            <h2 class="text-white text-xl sm:text-2xl font-semibold mb-3">
+                <span class="material-icons mr-1 align-middle">shopping_cart</span>Purchase Bundle
+            </h2>
             <div class="mb-3 sm:mb-4">
-                <label for="phone-number" class="block text-gray-400 mb-1 sm:mb-2"><span class="material-icons mr-1 align-middle text-sm">phone</span>PHONE NUMBER</label>
+                <label for="phone-number" class="block text-gray-400 mb-1 sm:mb-2">
+                    <span class="material-icons mr-1 align-middle text-sm">phone</span>PHONE NUMBER
+                </label>
                 <input type="text" id="phone-number" class="w-full p-2 bg-gray-700 text-gray-300 rounded text-sm" placeholder="Enter phone number"/>
             </div>
             <div class="mb-3 sm:mb-4">
-                <label for="network" class="block text-gray-400 mb-1 sm:mb-2"><span class="material-icons mr-1 align-middle text-sm">network_cell</span>NETWORK</label>
+                <label for="network" class="block text-gray-400 mb-1 sm:mb-2">
+                    <span class="material-icons mr-1 align-middle text-sm">network_cell</span>NETWORK
+                </label>
                 <select id="network" class="w-full p-2 bg-gray-700 text-gray-300 rounded text-sm">
                     <option value="">Select Network</option>
                     <option value="mtn">MTN</option>
@@ -54,14 +69,18 @@
                 </select>
             </div>
             <div class="mb-3 sm:mb-4">
-                <label for="bundle-volume" class="block text-gray-400 mb-1 sm:mb-2"><span class="material-icons mr-1 align-middle text-sm">data_usage</span>BUNDLE VOLUME</label>
+                <label for="bundle-volume" class="block text-gray-400 mb-1 sm:mb-2">
+                    <span class="material-icons mr-1 align-middle text-sm">data_usage</span>BUNDLE VOLUME
+                </label>
                 <select id="bundle-volume" class="w-full p-2 bg-gray-700 text-gray-300 rounded text-sm">
                     <option value="">Select package</option>
                 </select>
             </div>
             <div id="bundle-price" class="mb-3 sm:mb-4 text-gray-300"></div>
             <div class="flex space-x-2">
-                <button id="send-bundle" class="bg-red-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm btn-hover"><span class="material-icons mr-1 align-middle text-sm">send</span>Send Bundle</button>
+                <button id="send-bundle" class="bg-red-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm btn-hover">
+                    <span class="material-icons mr-1 align-middle text-sm">send</span>Send Bundle
+                </button>
             </div>
             <div id="loader" class="hidden mt-3 sm:mt-4 flex justify-center">
                 <div class="spinner"></div>
@@ -71,12 +90,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
     <script type="module">
-        // Import the functions you need from the SDKs you need
+        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
         import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
-        // Your web app's Firebase configuration
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAxdZufEUNjmHNrOtOH4GFtd2joqJzs_sk",
             authDomain: "gigs-hub-a0f14.firebaseapp.com",
@@ -103,14 +122,40 @@
         const activateButton = document.getElementById('activate-button');
         const loader = document.getElementById('loader');
 
-        // Network prices (GHS per GB) - Reduced for agent portal
-        const networkPrices = {
-            mtn: 4.80, // 10% discount
-            at: 4.5  // 25% discount
+        // Bundle prices from the image
+        const bundlePrices = {
+            mtn: {
+                '1': 4.80,
+                '2': 9.60,
+                '3': 14.40,
+                '4': 19.20,
+                '5': 24.00,
+                '6': 28.80,
+                '7': 38.40,
+                '10': 46.00,
+                '15': 72.00,
+                '20': 96.00,
+                '30': 130.00,
+                '50': 220.00
+            },
+            at: {
+                '1': 4.50,
+                '2': 9.00,
+                '3': 13.50,
+                '4': 18.00,
+                '5': 22.50,
+                '6': 27.00,
+                '7': 36.00,
+                '10': 43.00,
+                '15': 67.50,
+                '20': 90.00,
+                '30': 122.00,
+                '50': 205.00
+            }
         };
 
         // Bundle volumes (in GB)
-        const bundleVolumes = [1, 2, 3, 4, 5, 6, 7];
+        const bundleVolumes = Object.keys(bundlePrices.mtn);
 
         // Authentication state observer
         onAuthStateChanged(auth, (user) => {
@@ -118,11 +163,11 @@
                 checkAgentStatus(user);
             } else {
                 notyf.error('Please log in to access the agent portal');
-                window.location.href = 'index.html'; // Redirect to main page
+                window.location.href = 'index.html';
             }
         });
 
-        // Check if the user has activated the agent portal
+        // Check agent status
         function checkAgentStatus(user) {
             get(ref(database, 'users/' + user.uid + '/agentPortalActive'))
                 .then((snapshot) => {
@@ -138,13 +183,12 @@
                 });
         }
 
-        // Show activation section
+        // Show/hide sections
         function showActivationSection() {
             activationSection.classList.remove('hidden');
             bundlePurchaseSection.classList.add('hidden');
         }
 
-        // Show bundle purchase section
         function showBundlePurchaseSection() {
             activationSection.classList.add('hidden');
             bundlePurchaseSection.classList.remove('hidden');
@@ -155,9 +199,9 @@
             const user = auth.currentUser;
             if (user) {
                 const handler = PaystackPop.setup({
-                    key: 'pk_test_465904782c379e7b5eb53646745fec92442a3af4', // Replace with your actual Paystack public key
+                    key: 'pk_test_465904782c379e7b5eb53646745fec92442a3af4',
                     email: user.email,
-                    amount: 5000, // Amount in pesewas (50 GHS)
+                    amount: 5000,
                     currency: 'GHS',
                     ref: '' + Math.floor((Math.random() * 1000000000) + 1),
                     callback: function(response) {
@@ -181,13 +225,11 @@
             }
         });
 
-        // Network selection change handler
+        // Network selection handler
         document.getElementById('network').addEventListener('change', updateBundleOptions);
-
-        // Bundle volume selection change handler
         document.getElementById('bundle-volume').addEventListener('change', updatePrice);
 
-        // Update bundle options based on selected network
+        // Update bundle options
         function updateBundleOptions() {
             const network = document.getElementById('network').value;
             const bundleVolumeSelect = document.getElementById('bundle-volume');
@@ -197,7 +239,9 @@
                 bundleVolumes.forEach(volume => {
                     const option = document.createElement('option');
                     option.value = volume;
-                    option.textContent = `${volume}GB`;
+                    option.textContent = volume === '1' ? `${volume}GB` : 
+                                       parseInt(volume) >= 10 ? `${volume}GB` : 
+                                       `${volume}GB`;
                     bundleVolumeSelect.appendChild(option);
                 });
             }
@@ -205,15 +249,15 @@
             updatePrice();
         }
 
-        // Update price based on selected network and volume
+        // Update price display
         function updatePrice() {
             const network = document.getElementById('network').value;
             const volume = document.getElementById('bundle-volume').value;
             const priceElement = document.getElementById('bundle-price');
 
             if (network && volume) {
-                const price = networkPrices[network] * volume;
-                priceElement.textContent = `Price: GHS ${price.toFixed(2)}`;
+                const price = bundlePrices[network][volume];
+                priceElement.textContent = `PRICE: GHS ${price.toFixed(2)}`;
             } else {
                 priceElement.textContent = '';
             }
@@ -231,34 +275,27 @@
             const phoneNumber = document.getElementById('phone-number').value;
             const bundleVolume = document.getElementById('bundle-volume').value;
 
-            if (network === '' || bundleVolume === '' || phoneNumber === '') {
-                notyf.error('Please select a network, enter phone number, and select a package');
+            if (!network || !bundleVolume || !phoneNumber) {
+                notyf.error('Please fill in all fields');
                 return;
             }
 
-            // Show loader
             loader.classList.remove('hidden');
 
-            // Calculate price
-            const bundlePrice = networkPrices[network] * bundleVolume;
+            const bundlePrice = bundlePrices[network][bundleVolume];
 
-            // Initialize Paystack payment
             const handler = PaystackPop.setup({
-                key: 'pk_test_465904782c379e7b5eb53646745fec92442a3af4', // Replace with your actual Paystack public key
+                key: 'pk_test_465904782c379e7b5eb53646745fec92442a3af4',
                 email: user.email,
-                amount: bundlePrice * 100, // Amount in pesewas
+                amount: bundlePrice * 100,
                 currency: 'GHS',
                 ref: '' + Math.floor((Math.random() * 1000000000) + 1),
                 callback: function(response) {
-                    // Hide loader
                     loader.classList.add('hidden');
-                    notyf.success('Payment successful. Transaction reference: ' + response.reference);
-
-                    // Call the API to send the bundle
+                    notyf.success('Payment successful. Reference: ' + response.reference);
                     sendBundle(network, phoneNumber, bundleVolume, response.reference);
                 },
                 onClose: function() {
-                    // Hide loader
                     loader.classList.add('hidden');
                     notyf.warning('Transaction was not completed, window closed.');
                 }
@@ -266,17 +303,17 @@
             handler.openIframe();
         });
 
-        // Function to send bundle via API
+        // Send bundle via API
         async function sendBundle(network, phone, volume, reference) {
             const apiUrl = `https://console.hubnet.app/live/api/context/business/transaction/${network}-new-transaction`;
-            const apiKey = 'v61fayeo5LeSlVy1AgjHqgXFrYAgogDr2E7'; // Replace with your actual API key
+            const apiKey = 'v61fayeo5LeSlVy1AgjHqgXFrYAgogDr2E7';
 
             const payload = {
                 phone: phone,
-                volume: volume * 1000, // Convert GB to MB
+                volume: parseInt(volume) * 1000,
                 reference: reference,
                 referrer: auth.currentUser.phoneNumber || '',
-                webhook: 'https://your-webhook-url.com' // Replace with your actual webhook URL
+                webhook: 'https://your-webhook-url.com'
             };
 
             try {
@@ -302,7 +339,7 @@
             }
         }
 
-        // Function to save order to database
+        // Save order to database
         function saveOrderToDatabase(network, phone, volume, reference, transactionId) {
             const user = auth.currentUser;
             if (!user) {
@@ -313,8 +350,8 @@
             const orderData = {
                 network: network,
                 phoneNumber: phone,
-                bundleVolume: volume + 'GB',
-                price: networkPrices[network] * volume,
+                bundleVolume: volume + (parseInt(volume) >= 10 ? 'GIG' : 'GB'),
+                price: bundlePrices[network][volume],
                 userId: user.uid,
                 transactionReference: reference,
                 transactionId: transactionId,
@@ -334,4 +371,3 @@
     </script>
 </body>
 </html>
-
