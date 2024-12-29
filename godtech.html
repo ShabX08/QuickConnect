@@ -50,7 +50,7 @@
         <div id="home-section" class="hidden">
             <h2 class="text-white text-xl sm:text-2xl font-semibold mb-3"><span class="material-icons mr-1 align-middle">home</span>Home</h2>
             <div id="user-greeting" class="text-yellow-400 text-lg mb-4"></div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4 mb-6">
                 <div class="bg-gray-700 p-3 rounded">
                     <p class="text-gray-300 text-sm">Total Spent</p>
                     <p id="total-spent" class="text-white text-lg font-semibold"></p>
@@ -64,20 +64,30 @@
                     <p id="data-activated" class="text-white text-lg font-semibold"></p>
                 </div>
                 <div class="bg-gray-700 p-3 rounded">
-                    <p class="text-gray-300 text-sm">Recent Order</p>
+                    <p class="text-gray-300 text-sm">Last Order</p>
                     <p id="last-order" class="text-white text-lg font-semibold"></p>
                 </div>
+            </div>
+            <div class="flex space-x-4">
+                <button id="purchase-button" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded text-sm btn-hover flex items-center justify-center">
+                    <span class="material-icons mr-2">shopping_cart</span>Purchase
+                </button>
+                <a href="agent.html"><button class="flex-1 bg-green-500 text-white px-4 py-2 rounded text-sm btn-hover flex items-center justify-center">
+                    <span class="material-icons mr-2">support_agent</span>Agent Portal
+                </button></a>
             </div>
         </div>
 
         <!-- Bundle Purchase Section -->
         <div id="bundle-purchase-section" class="hidden">
+            <h2 class="text-white text-xl sm:text-2xl font-semibold mb-3"><span class="material-icons mr-1 align-middle">shopping_cart</span>Purchase Bundle</h2>
             <div class="flex items-center mb-3 sm:mb-4">
-                <h1 class="text-yellow-400 text-lg sm:text-xl font-bold ml-2">MTN OFFERS</h1>
+                <img src="https://storage.googleapis.com/a1aa/image/05S6wOFvzhqLJp5bN2mUJ44neY6ge1sDZrNMviWL3Bv3tifnA.jpg" alt="MTN logo" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full" width="32" height="32"/>
+                <h1 class="text-yellow-400 text-lg sm:text-xl font-bold ml-2">Yello offers</h1>
             </div>
             <div class="bg-green-500 text-white p-2 rounded mb-3 sm:mb-4">
                 <span class="material-icons mr-1 align-middle">info</span>
-                Note: Your bundle will arrive within the next 20 minutes to 4hours.
+                "Time is money, friend!" Your bundle will arrive within the next 20 minutes.
             </div>
             <div class="mb-3 sm:mb-4">
                 <label for="phone-number" class="block text-gray-400 mb-1 sm:mb-2"><span class="material-icons mr-1 align-middle text-sm">phone</span>PHONE NUMBER</label>
@@ -115,11 +125,30 @@
 
     <!-- Bottom Bar Navigation -->
     <div class="bg-gray-800 w-full py-2 sm:py-4 flex justify-around items-center fixed bottom-0 z-10">
-        <a href="#" id="home-icon" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2"><span class="material-icons text-lg sm:text-2xl">home</span></a>
-        <a href="#" id="data-icon" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2"><span class="material-icons text-lg sm:text-2xl">wifi</span></a>
-        <a href="#" id="profile-icon" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2"><span class="material-icons text-lg sm:text-2xl">person</span></a>
-        <a href="#" id="orders-icon" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2"><span class="material-icons text-lg sm:text-2xl">inventory</span></a>
-        <a href="#" id="logout" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2"><span class="material-icons text-lg sm:text-2xl">logout</span></a>
+        <a href="#" id="home-icon" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2 flex flex-col items-center">
+            <span class="material-icons text-lg sm:text-2xl">home</span>
+            <span class="text-xs mt-1">Home</span>
+        </a>
+        <a href="#" id="data-icon" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2 flex flex-col items-center">
+            <span class="material-icons text-lg sm:text-2xl">wifi</span>
+            <span class="text-xs mt-1">Data</span>
+        </a>
+        <a href="#" id="profile-icon" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2 flex flex-col items-center">
+            <span class="material-icons text-lg sm:text-2xl">person</span>
+            <span class="text-xs mt-1">Profile</span>
+        </a>
+        <a href="#" id="orders-icon" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2 flex flex-col items-center">
+            <span class="material-icons text-lg sm:text-2xl">inventory</span>
+            <span class="text-xs mt-1">Orders</span>
+        </a>
+        <a href="#" id="agent-icon" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2 flex flex-col items-center">
+            <span class="material-icons text-lg sm:text-2xl">support_agent</span>
+            <span class="text-xs mt-1">Agent</span>
+        </a>
+        <a href="#" id="logout" class="text-gray-400 hover:text-yellow-400 p-1 sm:p-2 flex flex-col items-center">
+            <span class="material-icons text-lg sm:text-2xl">logout</span>
+            <span class="text-xs mt-1">Logout</span>
+        </a>
     </div>
 
     <!-- Login Page -->
@@ -207,6 +236,21 @@
         <div id="orders-list" class="text-gray-300 space-y-3 max-h-96 overflow-y-auto pr-2"></div>
     </div>
 
+    <!-- Agent Page -->
+    <div id="agent-page" class="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-md mt-14 sm:mt-20 mx-2 sm:mx-4 hidden">
+        <h2 class="text-white text-xl sm:text-2xl font-semibold mb-3 sm:mb-4"><span class="material-icons mr-1 align-middle">support_agent</span>Agent Support</h2>
+        <div class="text-gray-300 mb-4">
+            <p>Need help? Contact our support team:</p>
+            <p class="mt-2"><span class="material-icons mr-1 align-middle">phone</span>Phone: +1 (234) 567-8900</p>
+            <p class="mt-2"><span class="material-icons mr-1 align-middle">email</span>Email: support@gigshub.com</p>
+        </div>
+        <div class="mt-4">
+            <h3 class="text-white text-lg font-semibold mb-2">Send us a message</h3>
+            <textarea id="support-message" class="w-full p-2 bg-gray-700 text-gray-300 rounded text-sm" rows="4" placeholder="Type your message here..."></textarea>
+            <button id="send-support-message" class="mt-2 bg-blue-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm btn-hover"><span class="material-icons mr-1 align-middle text-sm">send</span>Send Message</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
     <script type="module">
         // Import the functions you need from the SDKs you need
@@ -242,6 +286,7 @@
         const resetPage = document.getElementById('reset-page');
         const profilePage = document.getElementById('profile-page');
         const ordersPage = document.getElementById('orders-page');
+        const agentPage = document.getElementById('agent-page');
         const loader = document.getElementById('loader');
         const orderReceipt = document.getElementById('order-receipt');
 
@@ -262,6 +307,7 @@
             resetPage.classList.add('hidden');
             profilePage.classList.add('hidden');
             ordersPage.classList.add('hidden');
+            agentPage.classList.add('hidden');
         }
 
         // Helper function to set active nav item
@@ -419,6 +465,30 @@
             } else {
                 notyf.error('Please log in to access this section');
             }
+        });
+
+        document.getElementById('agent-icon').addEventListener('click', () => {
+            if (auth.currentUser) {
+                hideAllPages();
+                agentPage.classList.remove('hidden');
+                setActiveNavItem('agent-icon');
+            } else {
+                notyf.error('Please log in to access this section');
+            }
+        });
+
+        // Purchase button
+        document.getElementById('purchase-button').addEventListener('click', () => {
+            hideAllPages();
+            mainContent.classList.remove('hidden');
+            hideAllSections();
+            document.getElementById('bundle-purchase-section').classList.remove('hidden');
+            setActiveNavItem('data-icon');
+        });
+
+        // Agent Portal button
+        document.getElementById('agent-portal-button').addEventListener('click', () => {
+            notyf.info('Agent Portal functionality coming soon!');
         });
 
         // Add this new function to hide all sections
@@ -581,6 +651,7 @@
                 <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
             `;
 
+            hideAllSections();
             orderReceipt.classList.remove('hidden');
         }
 
@@ -734,6 +805,20 @@
                     lastOrder.textContent = 'Error';
                 });
         }
+
+        // Send support message
+        document.getElementById('send-support-message').addEventListener('click', () => {
+            const message = document.getElementById('support-message').value;
+            if (message.trim() === '') {
+                notyf.error('Please enter a message');
+                return;
+            }
+
+            // Here you would typically send this message to your backend
+            // For now, we'll just show a success message
+            notyf.success('Message sent to support team');
+            document.getElementById('support-message').value = '';
+        });
     </script>
 </body>
 </html>
