@@ -146,6 +146,7 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: var(--spacing-lg) var(--spacing-md);
+            background-color: white;
         }
 
         .section-header {
@@ -168,6 +169,7 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            background-color: white;
         }
 
         .product-card:hover {
@@ -215,13 +217,13 @@
         }
 
         .product-title {
-            font-weight: 600;
-            font-size: 15px;
+            font-size: 14px;
         }
 
         .product-price {
             font-weight: 600;
             font-size: var(--font-size-lg);
+            color: rgb(0, 0, 0);
         }
 
         .rating {
@@ -335,7 +337,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(218, 207, 207, 0.5);
             display: none;
             place-items: center;
             z-index: 1000;
@@ -601,6 +603,185 @@
                 font-size: var(--font-size-sm);
             }
         }
+
+        /* Orders section styles */
+#ordersSection {
+    padding: var(--spacing-lg);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.order-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.order-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: var(--spacing-lg);
+    transition: all 0.3s ease;
+}
+
+.order-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.order-card h3 {
+    font-size: 18px;
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color);
+}
+
+.order-card p {
+    font-size: 14px;
+    margin: var(--spacing-sm) 0;
+    color: var(--text-color);
+}
+
+.order-card .status-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: var(--spacing-md);
+    color: #ffffff;
+}
+
+.order-card .status-processing { background-color: #ffa500; }
+.order-card .status-packaging { background-color: #1e90ff; }
+.order-card .status-out-for-delivery { background-color: #32cd32; }
+.order-card .status-shipped { background-color: #4169e1; }
+.order-card .status-delivered { background-color: #228b22; }
+
+.order-card .order-items {
+    margin-top: var(--spacing-md);
+    font-size: 14px;
+}
+
+.order-card .order-total {
+    font-weight: bold;
+    margin-top: var(--spacing-md);
+    font-size: 16px;
+}
+
+.order-card .view-details-btn {
+    display: block;
+    width: 100%;
+    padding: var(--spacing-md);
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: var(--spacing-lg);
+}
+
+.order-card .view-details-btn:hover {
+    background-color: var(--primary-color-dark);
+}
+
+/* Order details modal styles */
+#orderDetailsModal .modal-content {
+    max-width: 600px;
+    padding: var(--spacing-lg);
+}
+
+#orderDetailsContent {
+    margin-top: var(--spacing-lg);
+}
+
+#orderDetailsContent h3 {
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color);
+}
+
+#orderDetailsContent ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+#orderDetailsContent li {
+    margin-bottom: var(--spacing-sm);
+    font-size: 14px;
+}
+
+#orderDetailsContent p {
+    margin: var(--spacing-sm) 0;
+    font-size: 14px;
+}
+
+#orderDetailsContent .status-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: var(--spacing-md);
+    color: #ffffff;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .order-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .order-card {
+        padding: var(--spacing-md);
+    }
+
+    .order-card h3 {
+        font-size: 16px;
+    }
+
+    .order-card p,
+    .order-card .order-items {
+        font-size: 12px;
+    }
+
+    .order-card .status-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+
+    .order-card .order-total {
+        font-size: 14px;
+    }
+
+    .order-card .view-details-btn {
+        font-size: 12px;
+        padding: var(--spacing-sm);
+    }
+
+    #orderDetailsModal .modal-content {
+        padding: var(--spacing-md);
+    }
+
+    #orderDetailsContent h3 {
+        font-size: 16px;
+    }
+
+    #orderDetailsContent li,
+    #orderDetailsContent p {
+        font-size: 12px;
+    }
+
+    #orderDetailsContent .status-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+}
     </style>
 </head>
 <body>
@@ -806,12 +987,12 @@
     <!-- Account Details -->
     <div id="accountDetails" class="auth-form">
         <button class="btn btn-outline back-btn" id="backFromAccount"><i class="fas fa-arrow-left"></i> Back</button>
-        <h2>Account Details</h2>
+        <h2 style="text-align: left;">Account Details</h2>
         <div id="accountInfo">
-            <p><strong>Name:</strong> <span id="accountName"></span></p>
-            <p><strong>Email:</strong> <span id="accountEmail"></span></p>
-            <p><strong>Phone:</strong> <span id="accountPhone"></span></p>
-            <p><strong>Area:</strong> <span id="accountArea"></span></p>
+            <p style="text-align: left;"><strong>Name:</strong> <span id="accountName"></span></p>
+            <p style="text-align: left;"><strong>Email:</strong> <span id="accountEmail"></span></p>
+            <p style="text-align: left;"><strong>Phone:</strong> <span id="accountPhone"></span></p>
+            <p style="text-align: left;"><strong>Area:</strong> <span id="accountArea"></span></p>
         </div>
         <button class="btn btn-primary" id="editAccountBtn">Edit Account</button>
         <button class="btn btn-primary" id="logoutBtn">Logout</button>
@@ -1237,12 +1418,12 @@
                                 ${product.badge ? `<span class="badge ${product.badge.toLowerCase().includes('new') ? 'badge-new' : 'badge-sale'}">${product.badge}</span>` : ''}
                                 <img src="${product.image}" alt="${product.name}" class="product-image">
                                 <div class="product-info">
-                                    <h3 class="product-title">${product.name}</h3>
+                                    <p class="product-title">${product.name}</p>
                                     <div class="product-price">
                                         ${product.originalPrice ? `<span class="original-price">GH₵${product.originalPrice.toFixed(2)}</span>` : ''}
                                         GH₵${product.price.toFixed(2)}
                                     </div>
-                                    <p>Shipping: GH₵${product.shippingFee.toFixed(2)}</p>
+                                    
                                     <button class="btn btn-primary buy-now-btn"><i class="fas fa-shopping-cart"></i> Buy now</button>
                                 </div>
                             </div>
