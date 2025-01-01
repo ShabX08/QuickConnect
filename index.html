@@ -3,19 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHOP 31776 - Fresh Products Delivered Daily</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>SHOP 31776</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
 
         :root {
             --primary-color: #000;
@@ -33,6 +26,13 @@
             --font-size-md: 0.9375rem;
             --font-size-lg: 1.0625rem;
             --font-size-xl: 1.1875rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
         body {
@@ -221,7 +221,7 @@
 
         .product-price {
             font-weight: 600;
-            font-size: var(--font-size-l);
+            font-size: var(--font-size-lg);
         }
 
         .rating {
@@ -510,7 +510,7 @@
             margin-top: 1rem;
         }
 
-        .auth-form.auth-form p {
+        .auth-form p {
             margin-top: 1rem;
             text-align: center;
             font-size: var(--font-size-sm);
@@ -542,302 +542,65 @@
             animation: fadeInUp 0.5s ease forwards;
         }
 
+        #accountDetails {
+            text-align: left;
+        }
 
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
 
-        /* Header styles */
-.header-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--spacing-md);
-}
+            .search-bar {
+                order: 2;
+                margin: var(--spacing-md) 0;
+                max-width: none;
+                width: 100%;
+            }
 
-.search-bar {
-    flex-grow: 1;
-    max-width: 500px;
-    margin: 0 var(--spacing-md);
-}
+            .header-actions {
+                order: 3;
+                justify-content: space-between;
+                flex-wrap: nowrap;
+            }
 
-.header-actions {
-    display: flex;
-    gap: var(--spacing-md);
-}
+            .header-actions .btn {
+                flex: 1;
+                font-size: var(--font-size-sm);
+                padding: var(--spacing-xs) var(--spacing-sm);
+            }
 
-/* Product grid styles */
-.product-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: var(--spacing-lg);
-    padding: var(--spacing-lg);
-}
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--spacing-md);
+            }
 
-/* Modal styles */
-.modal-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-lg);
-    padding: var(--spacing-lg);
-    background-color: #fff;
-    border-radius: 8px;
-    max-width: 800px;
-    width: 90%;
-    margin: auto;
-}
+            .modal-content {
+                grid-template-columns: 1fr;
+                padding: var(--spacing-md);
+                gap: var(--spacing-md);
+                width: 95%;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
 
-/* Cart styles */
-.cart-container {
-    position: fixed;
-    top: 0;
-    right: -400px;
-    width: 400px;
-    height: 100vh;
-    background-color: #fff;
-    transition: right 0.3s ease-in-out;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-}
+            .cart-container {
+                width: 100%;
+                right: -100%;
+            }
+        }
 
-.cart-container.active {
-    right: 0;
-}
+        @media (max-width: 480px) {
+            .header-actions {
+                flex-direction: row;
+            }
 
-/* Orders section styles */
-#ordersSection {
-    padding: var(--spacing-lg);
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.order-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
-}
-
-.order-card {
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: var(--spacing-lg);
-    transition: all 0.3s ease;
-}
-
-.order-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.order-card h3 {
-    font-size: 18px;
-    margin-bottom: var(--spacing-md);
-    color: var(--primary-color);
-}
-
-.order-card p {
-    font-size: 14px;
-    margin: var(--spacing-sm) 0;
-    color: var(--text-color);
-}
-
-.order-card .status-badge {
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: bold;
-    text-transform: uppercase;
-    margin-top: var(--spacing-md);
-    color: #ffffff;
-}
-
-.order-card .status-processing { background-color: #ffa500; }
-.order-card .status-packaging { background-color: #1e90ff; }
-.order-card .status-out-for-delivery { background-color: #32cd32; }
-.order-card .status-shipped { background-color: #4169e1; }
-.order-card .status-delivered { background-color: #228b22; }
-
-.order-card .order-items {
-    margin-top: var(--spacing-md);
-    font-size: 14px;
-}
-
-.order-card .order-total {
-    font-weight: bold;
-    margin-top: var(--spacing-md);
-    font-size: 16px;
-}
-
-.order-card .view-details-btn {
-    display: block;
-    width: 100%;
-    padding: var(--spacing-md);
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-top: var(--spacing-lg);
-}
-
-.order-card .view-details-btn:hover {
-    background-color: var(--primary-color-dark);
-}
-
-/* Order details modal styles */
-#orderDetailsModal .modal-content {
-    max-width: 600px;
-    padding: var(--spacing-lg);
-}
-
-#orderDetailsContent {
-    margin-top: var(--spacing-lg);
-}
-
-#orderDetailsContent h3 {
-    margin-top: var(--spacing-lg);
-    margin-bottom: var(--spacing-md);
-    color: var(--primary-color);
-}
-
-#orderDetailsContent ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-#orderDetailsContent li {
-    margin-bottom: var(--spacing-sm);
-    font-size: 14px;
-}
-
-#orderDetailsContent p {
-    margin: var(--spacing-sm) 0;
-    font-size: 14px;
-}
-
-#orderDetailsContent .status-badge {
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: bold;
-    text-transform: uppercase;
-    margin-top: var(--spacing-md);
-    color: #ffffff;
-}
-
-/* Responsive styles */
-@media (max-width: 768px) {
-    .header-content {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .search-bar {
-        order: 2;
-        margin: var(--spacing-md) 0;
-        max-width: none;
-        width: 100%;
-    }
-
-    .header-actions {
-        order: 3;
-        justify-content: space-between;
-        flex-wrap: wrap;
-    }
-
-    .header-actions .btn {
-        flex: 1 1 auto;
-        margin-top: var(--spacing-sm);
-    }
-
-    .product-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-md);
-    }
-
-    .modal-content {
-        grid-template-columns: 1fr;
-        padding: var(--spacing-md);
-        gap: var(--spacing-md);
-        width: 95%;
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-
-    .cart-container {
-        width: 100%;
-        right: -100%;
-    }
-
-    .order-cards {
-        grid-template-columns: 1fr;
-    }
-
-    .order-card {
-        padding: var(--spacing-md);
-    }
-
-    .order-card h3 {
-        font-size: 16px;
-    }
-
-    .order-card p,
-    .order-card .order-items {
-        font-size: 12px;
-    }
-
-    .order-card .status-badge {
-        font-size: 10px;
-        padding: 3px 8px;
-    }
-
-    .order-card .order-total {
-        font-size: 14px;
-    }
-
-    .order-card .view-details-btn {
-        font-size: 12px;
-        padding: var(--spacing-sm);
-    }
-
-    #orderDetailsModal .modal-content {
-        padding: var(--spacing-md);
-    }
-
-    #orderDetailsContent h3 {
-        font-size: 16px;
-    }
-
-    #orderDetailsContent li,
-    #orderDetailsContent p {
-        font-size: 12px;
-    }
-
-    #orderDetailsContent .status-badge {
-        font-size: 10px;
-        padding: 3px 8px;
-    }
-}
-
-@media (max-width: 480px) {
-    .product-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .header-actions {
-        flex-direction: column;
-    }
-
-    .header-actions .btn {
-        width: 100%;
-        margin-top: var(--spacing-sm);
-    }
-}
-
-
+            .header-actions .btn {
+                padding: var(--spacing-xs) var(--spacing-sm);
+                font-size: var(--font-size-sm);
+            }
+        }
     </style>
 </head>
 <body>
@@ -1434,7 +1197,8 @@
         function updateUIForUser() {
             const accountBtn = document.getElementById('accountBtn');
             if (currentUser) {
-                accountBtn.innerHTML = `<i class="fas fa-user"></i> ${currentUser.displayName}`;
+                const firstName = currentUser.displayName.split(' ')[0];
+                accountBtn.innerHTML = `<i class="fas fa-user"></i> ${firstName}`;
                 // Fetch additional user data from Firebase Realtime Database
                 firebase.database().ref('users/' + currentUser.uid).once('value').then((snapshot) => {
                     const userData = snapshot.val();
