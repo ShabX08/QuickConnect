@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHOP 31776 Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        :root {
+            --primary-color: #000;
+            --secondary-color: #666;
+            --accent-green: #2B8A3E;
+            --accent-red: #E03131;
+            --border-color: #E5E5E5;
+            --background-light: #F8F9FA;
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 0.75rem;
+            --spacing-lg: 1.25rem;
+            --spacing-xl: 1.75rem;
+            --font-size-sm: 0.8125rem;
+            --font-size-md: 0.9375rem;
+            --font-size-lg: 1.0625rem;
+            --font-size-xl: 1.1875rem;
+        }
+
+        body {
+            line-height: 1.5;
+            color: var(--primary-color);
+            font-size: var(--font-size-md);
+            background-color: var(--background-light);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-lg);
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: var(--spacing-lg) 0;
+            text-align: center;
+        }
+
+        nav {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            padding: var(--spacing-md) var(--spacing-lg);
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        nav ul li:hover {
+            background-color: var(--background-light);
+        }
+
+        nav ul li.active {
+            border-bottom: 3px solid var(--accent-green);
+        }
+
+        .content {
+            margin-top: var(--spacing-xl);
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: var(--spacing-lg);
+        }
+
+        h1, h2 {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        th, td {
+            padding: var(--spacing-md);
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--background-light);
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+        }
+
+        .btn:hover {
+            background-color: var(--accent-green);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--accent-green);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: var(--font-size-md);
+        }
+
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .stat-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: var(--spacing-lg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 2em;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: var(--spacing-lg);
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            nav ul {
+                flex-direction: column;
+            }
+
+            nav ul li {
+                text-align: center;
+            }
+
+            .dashboard-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SHOP 31776 Admin Panel</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li class="active" data-section="dashboard">Dashboard</li>
+            <li data-section="products">Products</li>
+            <li data-section="orders">Orders</li>
+            <li data-section="categories">Categories</li>
+            <li data-section="users">Users</li>
+            <li id="logoutBtn">Logout</li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div id="loginSection" style="display:none;">
+            <div class="login-form">
+                <h2>Admin Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <button type="submit" class="btn">Login</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="mainContent" style="display:none;">
+            <div id="dashboard" class="content">
+                <h2>Dashboard</h2>
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <h3 id="totalProducts">0</h3>
+                        <p>Total Products</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="totalOrders">0</h3>
+                        <p>Total Orders</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="totalUsers">0</h3>
+                        <p>Total Users</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="totalRevenue">GH₵0</h3>
+                        <p>Total Revenue</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="products" class="content" style="display:none;">
+                <h2>Product Management</h2>
+                <button id="addProductBtn" class="btn">Add New Product</button>
+                <table id="productTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Category</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div id="productForm" class="content" style="display:none;">
+                <h2>Add/Edit Product</h2>
+                <form id="addEditProductForm">
+                    <input type="hidden" id="productId">
+                    <div class="form-group">
+                        <label for="productName">Name:</label>
+                        <input type="text" id="productName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productPrice">Price:</label>
+                        <input type="number" id="productPrice" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productCategory">Category:</label>
+                        <select id="productCategory" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="productDescription">Description:</label>
+                        <textarea id="productDescription" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="productImage">Image URL:</label>
+                        <input type="url" id="productImage" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productShippingFee">Shipping Fee:</label>
+                        <input type="number" id="productShippingFee" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productBadge">Badge:</label>
+                        <select id="productBadge">
+                            <option value="">None</option>
+                            <option value="New">New</option>
+                            <option value="Sale">Sale</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Save Product</button>
+                    <button type="button" class="btn btn-secondary" id="cancelProductBtn">Cancel</button>
+                </form>
+            </div>
+
+            <div id="orders" class="content" style="display:none;">
+                <h2>Order Management</h2>
+                <table id="orderTable">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div id="orderDetails" class="content" style="display:none;">
+                <h2>Order Details</h2>
+                <div id="orderInfo"></div>
+                <h3>Items</h3>
+                <table id="orderItemsTable">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="form-group">
+                    <label for="orderStatus">Update Status:</label>
+                    <select id="orderStatus">
+                        <option value="Processing">Processing</option>
+                        <option value="Packaging">Packaging</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Out for Delivery">Out for Delivery</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <button id="updateOrderStatus" class="btn">Update Status</button>
+                <button id="backToOrders" class="btn btn-secondary">Back to Orders</button>
+            </div>
+
+            <div id="categories" class="content" style="display:none;">
+                <h2>Category Management</h2>
+                <div class="form-group">
+                    <input type="text" id="newCategory" placeholder="New category name">
+                    <button id="addCategoryBtn" class="btn">Add Category</button>
+                </div>
+                <table id="categoryTable">
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div id="users" class="content" style="display:none;">
+                <h2>User Management</h2>
+                <table id="userTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Area</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script>
+        // Initialize Notyf
+        const notyf = new Notyf({
+            duration: 2000,
+            position: {x: 'right', y: 'top'},
+        });
+
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTXdfbuiVbaeWQaeQbcasbWkNzjFgLg5c",
+            authDomain: "shop31776-22b02.firebaseapp.com",
+            projectId: "shop31776-22b02",
+            storageBucket: "shop31776-22b02.firebasestorage.app",
+            messagingSenderId: "62180688629",
+            appId: "1:62180688629:web:a4e709beb65027c7937bbc"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        // Global variables
+        let currentUser = null;
+        let categories = [];
+
+        // DOM Elements
+        const loginSection = document.getElementById('loginSection');
+        const mainContent = document.getElementById('mainContent');
+        const loginForm = document.getElementById('loginForm');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const navItems = document.querySelectorAll('nav ul li');
+        const contentSections = document.querySelectorAll('.content');
+        const productTable = document.getElementById('productTable');
+        const orderTable = document.getElementById('orderTable');
+        const categoryTable = document.getElementById('categoryTable');
+        const userTable = document.getElementById('userTable');
+        const addProductBtn = document.getElementById('addProductBtn');
+        const productForm = document.getElementById('productForm');
+        const addEditProductForm = document.getElementById('addEditProductForm');
+        const cancelProductBtn = document.getElementById('cancelProductBtn');
+        const orderDetails = document.getElementById('orderDetails');
+        const orderInfo = document.getElementById('orderInfo');
+        const orderItemsTable = document.getElementById('orderItemsTable');
+        const updateOrderStatus = document.getElementById('updateOrderStatus');
+        const backToOrders = document.getElementById('backToOrders');
+        const addCategoryBtn = document.getElementById('addCategoryBtn');
+        const newCategoryInput = document.getElementById('newCategory');
+
+        // Authentication
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    currentUser = userCredential.user;
+                    loginSection.style.display = 'none';
+                    mainContent.style.display = 'block';
+                    loadDashboard();
+                    notyf.success('Logged in successfully!');
+                })
+                .catch((error) => {
+                    notyf.error('Login failed: ' + error.message);
+                });
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            firebase.auth().signOut().then(() => {
+                currentUser = null;
+                loginSection.style.display = 'block';
+                mainContent.style.display = 'none';
+                notyf.success('Logged out successfully!');
+            }).catch((error) => {
+                notyf.error('Logout failed: ' + error.message);
+            });
+        });
+
+        // Navigation
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                if (item.id !== 'logoutBtn') {
+                    navItems.forEach(navItem => navItem.classList.remove('active'));
+                    item.classList.add('active');
+                    const sectionId = item.getAttribute('data-section');
+                    contentSections.forEach(section => {
+                        section.style.display = section.id === sectionId ? 'block' : 'none';
+                    });
+                    if (sectionId === 'dashboard') {
+                        loadDashboard();
+                    } else if (sectionId === 'products') {
+                        loadProducts();
+                    } else if (sectionId === 'orders') {
+                        loadOrders();
+                    } else if (sectionId === 'categories') {
+                        loadCategories();
+                    } else if (sectionId === 'users') {
+                        loadUsers();
+                    }
+                }
+            });
+        });
+
+        // Dashboard
+        function loadDashboard() {
+            const productsRef = firebase.database().ref('products');
+            const ordersRef = firebase.database().ref('orders');
+            const usersRef = firebase.database().ref('users');
+
+            productsRef.once('value', (snapshot) => {
+                document.getElementById('totalProducts').textContent = snapshot.numChildren();
+            });
+
+            ordersRef.once('value', (snapshot) => {
+                let totalOrders = snapshot.numChildren();
+                let totalRevenue = 0;
+                snapshot.forEach((childSnapshot) => {
+                    totalRevenue += childSnapshot.val().total;
+                });
+                document.getElementById('totalOrders').textContent = totalOrders;
+                document.getElementById('totalRevenue').textContent = `GH₵${totalRevenue.toFixed(2)}`;
+            });
+
+            usersRef.once('value', (snapshot) => {
+                document.getElementById('totalUsers').textContent = snapshot.numChildren();
+            });
+        }
+
+        // Products
+        function loadProducts() {
+            const productsRef = firebase.database().ref('products');
+            productsRef.on('value', (snapshot) => {
+                const products = snapshot.val();
+                let tableHtml = '';
+                for (let id in products) {
+                    const product = products[id];
+                    tableHtml += `
+                        <tr>
+                            <td>${id}</td>
+                            <td>${product.name}</td>
+                            <td>GH₵${product.price.toFixed(2)}</td>
+                            <td>${product.category}</td>
+                            <td>
+                                <button class="btn btn-secondary edit-product" data-id="${id}">Edit</button>
+                                <button class="btn btn-secondary delete-product" data-id="${id}">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+                productTable.querySelector('tbody').innerHTML = tableHtml;
+
+                // Add event listeners for edit and delete buttons
+                document.querySelectorAll('.edit-product').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const productId = e.target.getAttribute('data-id');
+                        editProduct(productId);
+                    });
+                });
+
+                document.querySelectorAll('.delete-product').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const productId = e.target.getAttribute('data-id');
+                        deleteProduct(productId);
+                    });
+                });
+            });
+        }
+
+        addProductBtn.addEventListener('click', () => {
+            document.getElementById('productId').value = '';
+            addEditProductForm.reset();
+            productForm.style.display = 'block';
+            document.getElementById('products').style.display = 'none';
+        });
+
+        cancelProductBtn.addEventListener('click', () => {
+            productForm.style.display = 'none';
+            document.getElementById('products').style.display = 'block';
+        });
+
+        addEditProductForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const productId = document.getElementById('productId').value;
+            const product = {
+                name: document.getElementById('productName').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                category: document.getElementById('productCategory').value,
+                description: document.getElementById('productDescription').value,
+                image: document.getElementById('productImage').value,
+                shippingFee: parseFloat(document.getElementById('productShippingFee').value),
+                badge: document.getElementById('productBadge').value
+            };
+
+            if (productId) {
+                // Update existing product
+                firebase.database().ref('products/' + productId).update(product)
+                    .then(() => {
+                        notyf.success('Product updated successfully!');
+                        productForm.style.display = 'none';
+                        document.getElementById('products').style.display = 'block';
+                    })
+                    .catch((error) => {
+                        console.error('Error updating product:', error);
+                        notyf.error('Failed to update product. Please try again.');
+                    });
+            } else {
+                // Add new product
+                firebase.database().ref('products').push(product)
+                    .then(() => {
+                        notyf.success('Product added successfully!');
+                        productForm.style.display = 'none';
+                        document.getElementById('products').style.display = 'block';
+                    })
+                    .catch((error) => {
+                        console.error('Error adding product:', error);
+                        notyf.error('Failed to add product. Please try again.');
+                    });
+            }
+        });
+
+        function editProduct(productId) {
+            firebase.database().ref('products/' + productId).once('value', (snapshot) => {
+                const product = snapshot.val();
+                document.getElementById('productId').value = productId;
+                document.getElementById('productName').value = product.name;
+                document.getElementById('productPrice').value = product.price;
+                document.getElementById('productCategory').value = product.category;
+                document.getElementById('productDescription').value = product.description;
+                document.getElementById('productImage').value = product.image;
+                document.getElementById('productShippingFee').value = product.shippingFee;
+                document.getElementById('productBadge').value = product.badge || '';
+                productForm.style.display = 'block';
+                document.getElementById('products').style.display = 'none';
+            });
+        }
+
+        function deleteProduct(productId) {
+            if (confirm('Are you sure you want to delete this product?')) {
+                firebase.database().ref('products/' + productId).remove()
+                    .then(() => {
+                        notyf.success('Product deleted successfully!');
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting product:', error);
+                        notyf.error('Failed to delete product. Please try again.');
+                    });
+            }
+        }
+
+        // Orders
+        function loadOrders() {
+            const ordersRef = firebase.database().ref('orders');
+            ordersRef.on('value', (snapshot) => {
+                const orders = snapshot.val();
+                let tableHtml = '';
+                for (let id in orders) {
+                    const order = orders[id];
+                    tableHtml += `
+                        <tr>
+                            <td>${id}</td>
+                            <td>${order.name}</td>
+                            <td>GH₵${order.total.toFixed(2)}</td>
+                            <td>${order.status}</td>
+                            <td>
+                                <button class="btn btn-secondary view-order" data-id="${id}">View</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+                orderTable.querySelector('tbody').innerHTML = tableHtml;
+
+                // Add event listeners for view buttons
+                document.querySelectorAll('.view-order').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const orderId = e.target.getAttribute('data-id');
+                        viewOrderDetails(orderId);
+                    });
+                });
+            });
+        }
+
+        function viewOrderDetails(orderId) {
+            firebase.database().ref('orders/' + orderId).once('value', (snapshot) => {
+                const order = snapshot.val();
+                let orderInfoHtml = `
+                    <p><strong>Order ID:</strong> ${orderId}</p>
+                    <p><strong>Customer:</strong> ${order.name}</p>
+                    <p><strong>Email:</strong> ${order.email}</p>
+                    <p><strong>Phone:</strong> ${order.phone}</p>
+                    <p><strong>Area:</strong> ${order.area}</p>
+                    <p><strong>Total:</strong> GH₵${order.total.toFixed(2)}</p>
+                    <p><strong>Status:</strong> ${order.status}</p>
+                    <p><strong>Delivery Option:</strong> ${order.deliveryOption}</p>
+                `;
+                orderInfo.innerHTML = orderInfoHtml;
+
+                let itemsTableHtml = '';
+                order.items.forEach(item => {
+                    itemsTableHtml += `
+                        <tr>
+                            <td>${item.name}</td>
+                            <td>${item.quantity}</td>
+                            <td>GH₵${item.price.toFixed(2)}</td>
+                            <td>GH₵${(item.price * item.quantity).toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+                orderItemsTable.querySelector('tbody').innerHTML = itemsTableHtml;
+
+                document.getElementById('orderStatus').value = order.status;
+                updateOrderStatus.setAttribute('data-id', orderId);
+                orderDetails.style.display = 'block';
+                document.getElementById('orders').style.display = 'none';
+            });
+        }
+
+        updateOrderStatus.addEventListener('click', () => {
+            const orderId = updateOrderStatus.getAttribute('data-id');
+            const newStatus = document.getElementById('orderStatus').value;
+            firebase.database().ref('orders/' + orderId).update({ status: newStatus })
+                .then(() => {
+                    notyf.success('Order status updated successfully!');
+                    viewOrderDetails(orderId);
+                })
+                .catch((error) => {
+                    console.error('Error updating order status:', error);
+                    notyf.error('Failed to update order status. Please try again.');
+                });
+        });
+
+        backToOrders.addEventListener('click', () => {
+            orderDetails.style.display = 'none';
+            document.getElementById('orders').style.display = 'block';
+        });
+
+        // Categories
+        function loadCategories() {
+            const categoriesRef = firebase.database().ref('categories');
+            categoriesRef.on('value', (snapshot) => {
+                categories = snapshot.val() || [];
+                let tableHtml = '';
+                categories.forEach((category, index) => {
+                    tableHtml += `
+                        <tr>
+                            <td>${category}</td>
+                            <td>
+                                <button class="btn btn-secondary delete-category" data-index="${index}">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                categoryTable.querySelector('tbody').innerHTML = tableHtml;
+
+                // Update product category select
+                const categorySelect = document.getElementById('productCategory');
+                categorySelect.innerHTML = categories.map(category => `<option value="${category}">${category}</option>`).join('');
+
+                // Add event listeners for delete buttons
+                document.querySelectorAll('.delete-category').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = e.target.getAttribute('data-index');
+                        deleteCategory(index);
+                    });
+                });
+            });
+        }
+
+        addCategoryBtn.addEventListener('click', () => {
+            const newCategory = newCategoryInput.value.trim();
+            if (newCategory && !categories.includes(newCategory)) {
+                categories.push(newCategory);
+                firebase.database().ref('categories').set(categories)
+                    .then(() => {
+                        notyf.success('Category added successfully!');
+                        newCategoryInput.value = '';
+                    })
+                    .catch((error) => {
+                        console.error('Error adding category:', error);
+                        notyf.error('Failed to add category. Please try again.');
+                    });
+            } else {
+                notyf.error('Please enter a valid and unique category name.');
+            }
+        });
+
+        function deleteCategory(index) {
+            if (confirm('Are you sure you want to delete this category?')) {
+                categories.splice(index, 1);
+                firebase.database().ref('categories').set(categories)
+                    .then(() => {
+                        notyf.success('Category deleted successfully!');
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting category:', error);
+                        notyf.error('Failed to delete category. Please try again.');
+                    });
+            }
+        }
+
+        // Users
+        function loadUsers() {
+            const usersRef = firebase.database().ref('users');
+            usersRef.on('value', (snapshot) => {
+                const users = snapshot.val();
+                let tableHtml = '';
+                for (let id in users) {
+                    const user = users[id];
+                    tableHtml += `
+                        <tr>
+                            <td>${user.firstName} ${user.lastName}</td>
+                            <td>${user.email}</td>
+                            <td>${user.phone}</td>
+                            <td>${user.area}</td>
+                            <td>
+                                <button class="btn btn-secondary delete-user" data-id="${id}">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+                userTable.querySelector('tbody').innerHTML = tableHtml;
+
+                // Add event listeners for delete buttons
+                document.querySelectorAll('.delete-user').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const userId = e.target.getAttribute('data-id');
+                        deleteUser(userId);
+                    });
+                });
+            });
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                firebase.database().ref('users/' + userId).remove()
+                    .then(() => {
+                        notyf.success('User deleted successfully!');
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting user:', error);
+                        notyf.error('Failed to delete user. Please try again.');
+                    });
+            }
+        }
+
+        // Check authentication state on page load
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                loginSection.style.display = 'none';
+                mainContent.style.display = 'block';
+                loadDashboard();
+            } else {
+                loginSection.style.display = 'block';
+                mainContent.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
