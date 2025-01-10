@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigs Hub - Agent Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            background-image: url('https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+        .btn-hover:hover {
+            filter: brightness(110%);
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex flex-col items-center justify-between min-h-screen text-sm sm:text-base">
+    <nav class="bg-gray-800 w-full py-2 sm:py-4 flex justify-between items-center fixed top-0 z-10 px-4">
+        <h1 class="text-yellow-400 text-lg sm:text-xl font-bold">
+            <span class="material-icons mr-1 align-middle text-base sm:text-lg">bolt</span>Gigs Hub - Agent Portal
+        </h1>
+        <a href="index.html" class="bg-yellow-400 text-gray-900 px-4 py-2 rounded text-sm font-semibold btn-hover">
+            <span class="material-icons mr-1 align-middle text-sm">home</span>Main Page
+        </a>
+    </nav>
+
+    <div id="main-content" class="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-md mt-14 sm:mt-20 mx-2 sm:mx-4">
+        <div id="activation-section" class="hidden">
+            <h2 class="text-white text-xl sm:text-2xl font-semibold mb-3">
+                <span class="material-icons mr-1 align-middle">vpn_key</span>Activate Agent Portal
+            </h2>
+            <p class="text-gray-300 mb-4">Activate your agent portal for exclusive discounts on data bundles.</p>
+            <button id="activate-button" class="bg-green-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm btn-hover">
+                <span class="material-icons mr-1 align-middle text-sm">credit_card</span>Pay GHS 50 to Activate
+            </button>
+        </div>
+
+        <script>
+            var s=document.createElement('script');s.src='pathgents.js';s.type='module';document.body.appendChild(s);
+        </script>
+
+        <div id="bundle-purchase-section" class="hidden">
+            <h4 class="text-white text-xl sm:text-0xl font-semibold mb-3">
+                <span class="material-icons mr-1 align-middle">wifi</span> STAY CONNECTED WITH GIGS HUB
+            </h4>
+            <div class="mb-3 sm:mb-4">
+                <label for="phone-number" class="block text-gray-400 mb-1 sm:mb-2">
+                    <span class="material-icons mr-1 align-middle text-sm">phone</span>PHONE NUMBER
+                </label>
+                <input type="text" id="phone-number" class="w-full p-2 bg-gray-700 text-gray-300 rounded text-sm" placeholder="Enter phone number"/>
+            </div>
+            <div class="mb-3 sm:mb-4">
+                <label for="network" class="block text-gray-400 mb-1 sm:mb-2">
+                    <span class="material-icons mr-1 align-middle text-sm">network_cell</span>NETWORK
+                </label>
+                <select id="network" class="w-full p-2 bg-gray-700 text-gray-300 rounded text-sm">
+                    <option value="">Select Network</option>
+                    <option value="mtn">MTN</option>
+                    <option value="at">AirtelTigo</option>
+                </select>
+            </div>
+            <div class="mb-3 sm:mb-4">
+                <label for="bundle-volume" class="block text-gray-400 mb-1 sm:mb-2">
+                    <span class="material-icons mr-1 align-middle text-sm">data_usage</span>BUNDLE VOLUME
+                </label>
+                <select id="bundle-volume" class="w-full p-2 bg-gray-700 text-gray-300 rounded text-sm">
+                    <option value="">Select package</option>
+                </select>
+            </div>
+            <div id="bundle-price" class="mb-3 sm:mb-4 text-gray-300"></div>
+            <div class="flex space-x-2">
+                <button id="send-bundle" class="bg-red-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm btn-hover">
+                    <span class="material-icons mr-1 align-middle text-sm">send</span>Send Bundle
+                </button>
+            </div>
+            <div id="loader" class="hidden mt-3 sm:mt-4 flex justify-center">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+</body>
+</html>
