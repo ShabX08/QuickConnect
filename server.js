@@ -104,7 +104,7 @@ app.post("/api/verify-payment", async (req, res) => {
             phone,
             volume,
             reference,
-            referrer: req.get("origin"),
+            referrer: process.env.CALLBACK_URL,
           }),
         },
       )
@@ -112,15 +112,17 @@ app.post("/api/verify-payment", async (req, res) => {
       const hubnetData = await hubnetResponse.json()
       console.log("Received response from Hubnet API:", hubnetData)
 
-      if (hubnetData.status === "success") {
+      if (hubnetData.status) {
         res.json({ status: "success", message: "Payment verified and data bundle initiated successfully" })
       } else {
         console.error("Hubnet transaction initiation failed:", hubnetData)
-        res.status(400).json({ status: "failed", message: "Hubnet transaction initiation failed" })
+        res
+          .status(400)
+          .json({ status: "failed", message: "Hubnet transaction initiation failed", error: hubnetData.reason })
       }
     } else {
       console.error("Paystack payment verification failed:", verifyData)
-      res.status(400).json({ status: "failed", message: "Payment verification failed" })
+      res.status(400).json({ status: "failed", message: "Payment verification failed", error: verifyData.message })
     }
   } catch (error) {
     console.error("Error in payment verification:", error)
@@ -133,4 +135,8 @@ app.listen(port, () => {
   console.log("Paystack Secret Key configured:", !!process.env.PAYSTACK_SECRET_KEY)
   console.log("Hubnet API Key configured:", !!process.env.HUBNET_API_KEY)
 })
+
+console.log("Paystack Secret Key configured:", !!process.env.PAYSTACK_SECRET_KEY)
+console.log("Hubnet API Key configured:", !!process.env.HUBNET_API_KEY)
+console.log("Callback URL configured:", process.env.CALLBACK_URL)
 
