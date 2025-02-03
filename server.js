@@ -9,21 +9,19 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static("public"));
 app.use(express.json());
-app.use(cors()); // Enable CORS for all origins
+app.use(cors());
 
 // Initiate payment route
 app.post("/api/initiate-payment", async (req, res) => {
-    const { network, phone, volume, amount } = req.body;
+    const { network, phone, volume, amount, email } = req.body;
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
-    const paystackPublicKey = process.env.PAYSTACK_PUBLIC_KEY;
 
-    if (!paystackSecretKey || !paystackPublicKey) {
-        console.error("Paystack keys are not configured");
-        return res.status(500).json({ error: "Paystack keys are not configured" });
+    if (!paystackSecretKey) {
+        console.error("Paystack secret key is not configured");
+        return res.status(500).json({ error: "Paystack secret key is not configured" });
     }
 
     try {
-        // Request to Paystack API to initialize the payment
         const response = await fetch("https://api.paystack.co/transaction/initialize", {
             method: "POST",
             headers: {
@@ -31,14 +29,14 @@ app.post("/api/initiate-payment", async (req, res) => {
                 "Authorization": `Bearer ${paystackSecretKey}`
             },
             body: JSON.stringify({
-                amount: amount * 100, // Convert to kobo (Paystack requires amounts in kobo)
-                email: req.body.email, // Ensure to send the user's email from the frontend
+                amount: amount * 100,
+                email,
                 metadata: {
                     network,
                     phone,
                     volume
                 },
-                callback_url: `${process.env.CALLBACK_URL}/api/verify-payment`
+                callback_url: `${process.env.CALLBACK_URL}/payment-success.html`
             })
         });
 
@@ -46,7 +44,6 @@ app.post("/api/initiate-payment", async (req, res) => {
         console.log("Received response from Paystack API:", data);
 
         if (data.status) {
-            // Successful payment initialization
             res.json({
                 status: 'success',
                 data: {
@@ -64,8 +61,8 @@ app.post("/api/initiate-payment", async (req, res) => {
 });
 
 // Verify payment and initiate Hubnet transaction
-app.get("/api/verify-payment", async (req, res) => {
-    const { reference } = req.query;
+app.post("/api/verify-payment", async (req, res) => {
+    const { reference } = req.body;
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
     const hubnetApiKey = process.env.HUBNET_API_KEY;
 
@@ -103,7 +100,7 @@ app.get("/api/verify-payment", async (req, res) => {
                         volume,
                         reference,
                         referrer: req.get('origin'),
-                        webhook: `${req.protocol}://${req.get('host')}/api/webhook`, // Webhook URL for updates
+                        webhook: `${req.protocol}://${req.get('host')}/api/webhook`,
                     }),
                 }
             );
@@ -112,7 +109,6 @@ app.get("/api/verify-payment", async (req, res) => {
             console.log("Received response from Hubnet API:", hubnetData);
 
             if (hubnetData.status === 'success') {
-                // Hubnet transaction initiated successfully
                 res.json({ status: 'success', message: 'Payment verified and data bundle initiated successfully' });
             } else {
                 console.error("Hubnet transaction initiation failed:", hubnetData);
@@ -128,10 +124,8 @@ app.get("/api/verify-payment", async (req, res) => {
     }
 });
 
-// Listen for requests
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
     console.log("Paystack Secret Key configured:", !!process.env.PAYSTACK_SECRET_KEY);
-    console.log("Paystack Public Key configured:", !!process.env.PAYSTACK_PUBLIC_KEY);
     console.log("Hubnet API Key configured:", !!process.env.HUBNET_API_KEY);
 });
