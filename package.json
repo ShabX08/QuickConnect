@@ -4,7 +4,7 @@
   "description": "Quick Connect Data Bundle Service",
   "main": "server.js",
   "scripts": {
-      "start": "node server.js"
+      "start": "quickconnect-backend.js"
   },
   "dependencies": {
       "dotenv": "^10.0.0",
