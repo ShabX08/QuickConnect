@@ -1,142 +1,162 @@
-import express from "express"
-import fetch from "node-fetch"
-import cors from "cors"
-import { fileURLToPath } from "url"
-import { dirname } from "path"
-import dotenv from "dotenv"
+import express from 'express';
+import cors from 'cors';
+import fetch from 'node-fetch';
+import * as dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import crypto from 'crypto';
 
-dotenv.config()
+dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const app = express()
-const port = process.env.PORT || 3000
+const app = express();
+const port = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`;
 
-app.use(express.static("public"))
-app.use(express.json())
-app.use(cors())
+app.use(cors());
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
-// Initiate payment route
+const HUBNET_API_KEY = process.env.HUBNET_API_KEY;
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY;
+
+if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY || !PAYSTACK_PUBLIC_KEY) {
+  console.error("Missing required environment variables. Please check your .env file.");
+  process.exit(1);
+}
+
+function generateReference() {
+  const prefix = 'MTN_ALT_';
+  const randomNum = Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
+  return `${prefix}${randomNum}`;
+}
+
 app.post("/api/initiate-payment", async (req, res) => {
-  const { network, phone, volume, amount, email } = req.body
-  const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY
-
-  if (!paystackSecretKey) {
-    console.error("Paystack secret key is not configured")
-    return res.status(500).json({ error: "Paystack secret key is not configured" })
+  const { network, phone, volume, amount, email } = req.body;
+  if (!network || !phone || !volume || !amount || !email) {
+    console.error("Missing required payment data:", req.body);
+    return res.status(400).json({ status: "error", message: "Missing required payment data." });
   }
 
+  const reference = generateReference();
+  console.log(`Initiating payment for reference: ${reference}`);
+
   try {
-    const response = await fetch("https://api.paystack.co/transaction/initialize", {
+    const amountInKobo = Math.round(amount * 100);
+    const callback_url = `${BASE_URL}/payment/callback`;
+
+    const payload = {
+      amount: amountInKobo,
+      email,
+      callback_url,
+      reference,
+      metadata: { network, phone, volume }
+    };
+
+    console.log("Sending request to Paystack API:", payload);
+
+    const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${paystackSecretKey}`,
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`
       },
-      body: JSON.stringify({
-        amount: amount * 100,
-        email,
-        metadata: {
-          network,
-          phone,
-          volume,
-        },
-      }),
-    })
+      body: JSON.stringify(payload)
+    });
 
-    const data = await response.json()
-    console.log("Received response from Paystack API:", data)
+    const data = await paystackResponse.json();
+    console.log("Received response from Paystack API:", data);
 
-    if (data.status) {
-      res.json({
+    if (data.status && data.data) {
+      return res.json({
         status: "success",
         data: {
-          authorization_url: data.data.authorization_url,
+          publicKey: PAYSTACK_PUBLIC_KEY,
+          amount: amountInKobo,
           reference: data.data.reference,
-        },
-      })
+          authorization_url: data.data.authorization_url
+        }
+      });
     } else {
-      res.status(400).json({ error: data.message })
+      console.error("Paystack API error:", data);
+      return res.status(400).json({
+        status: "error",
+        message: data.message || "Failed to initialize payment"
+      });
     }
   } catch (error) {
-    console.error("Error in Paystack API request:", error)
-    res.status(500).json({ error: "An error occurred while processing your request." })
+    console.error("Error in Paystack API request:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "An error occurred while processing your request."
+    });
   }
-})
+});
 
-// Verify payment and initiate Hubnet transaction
-app.post("/api/verify-payment", async (req, res) => {
-  const { reference } = req.body
-  const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY
-  const hubnetApiKey = process.env.HUBNET_API_KEY
-
-  if (!paystackSecretKey || !hubnetApiKey) {
-    console.error("Missing API keys (Paystack or Hubnet)")
-    return res.status(500).json({ error: "API keys are not configured" })
+app.get("/payment/callback", async (req, res) => {
+  const { reference } = req.query;
+  if (!reference) {
+    console.error("Missing reference in callback");
+    return res.redirect(`${BASE_URL}/index.html?status=error&message=Missing reference`);
   }
+
+  console.log(`Processing payment callback for reference: ${reference}`);
 
   try {
-    // Verify payment with Paystack API
     const verifyResponse = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
       headers: {
-        Authorization: `Bearer ${paystackSecretKey}`,
-      },
-    })
-
-    const verifyData = await verifyResponse.json()
-    console.log("Paystack payment verification response:", verifyData)
-
-    if (verifyData.status && verifyData.data.status === "success") {
-      // Payment is successful, now initiate Hubnet transaction
-      const { network, phone, volume } = verifyData.data.metadata
-
-      // Initiate Hubnet transaction
-      const hubnetResponse = await fetch(
-        `https://console.hubnet.app/live/api/context/business/transaction/${network}-new-transaction`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            token: `Bearer ${hubnetApiKey}`,
-          },
-          body: JSON.stringify({
-            phone,
-            volume,
-            reference,
-            referrer: process.env.CALLBACK_URL,
-          }),
-        },
-      )
-
-      const hubnetData = await hubnetResponse.json()
-      console.log("Received response from Hubnet API:", hubnetData)
-
-      if (hubnetData.status) {
-        res.json({ status: "success", message: "Payment verified and data bundle initiated successfully" })
-      } else {
-        console.error("Hubnet transaction initiation failed:", hubnetData)
-        res
-          .status(400)
-          .json({ status: "failed", message: "Hubnet transaction initiation failed", error: hubnetData.reason })
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`
       }
+    });
+    const verifyData = await verifyResponse.json();
+    console.log("Paystack verification response:", verifyData);
+
+    if (!(verifyData.status && verifyData.data && verifyData.data.status === "success")) {
+      console.error("Payment verification failed:", verifyData);
+      return res.redirect(`${BASE_URL}/index.html?status=payment_failed&message=Payment verification failed`);
+    }
+
+    const { network, phone, volume } = verifyData.data.metadata;
+    const hubnetEndpoint = `https://console.hubnet.app/live/api/context/business/transaction/${network}-new-transaction`;
+
+    const hubnetPayload = {
+      phone,
+      volume: volume.toString(),
+      reference
+    };
+
+    console.log("Sending request to Hubnet API:", hubnetPayload);
+
+    const hubnetResponse = await fetch(hubnetEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        token: `Bearer ${HUBNET_API_KEY}`
+      },
+      body: JSON.stringify(hubnetPayload)
+    });
+    const hubnetData = await hubnetResponse.json();
+    console.log("Hubnet response:", hubnetData);
+
+    if (hubnetData.status && hubnetData.code === "0000") {
+      console.log(`Successfully sent data bundle for reference: ${reference}`);
+      return res.redirect(`${BASE_URL}/index.html?status=success&message=Payment successful and data bundle sent`);
     } else {
-      console.error("Paystack payment verification failed:", verifyData)
-      res.status(400).json({ status: "failed", message: "Payment verification failed", error: verifyData.message })
+      console.error("Failed to send data bundle:", hubnetData);
+      return res.redirect(`${BASE_URL}/index.html?status=hubnet_error&message=Failed to send data bundle`);
     }
   } catch (error) {
-    console.error("Error in payment verification:", error)
-    res.status(500).json({ error: "An error occurred while verifying the payment." })
+    console.error("Error during payment verification or Hubnet transaction:", error);
+    return res.redirect(`${BASE_URL}/index.html?status=error&message=An unexpected error occurred`);
   }
-})
+});
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`)
-  console.log("Paystack Secret Key configured:", !!process.env.PAYSTACK_SECRET_KEY)
-  console.log("Hubnet API Key configured:", !!process.env.HUBNET_API_KEY)
-})
-
-console.log("Paystack Secret Key configured:", !!process.env.PAYSTACK_SECRET_KEY)
-console.log("Hubnet API Key configured:", !!process.env.HUBNET_API_KEY)
-console.log("Callback URL configured:", process.env.CALLBACK_URL)
-
+  console.log(`Server running at ${BASE_URL}`);
+  console.log("Hubnet API Key configured:", Boolean(HUBNET_API_KEY));
+  console.log("Paystack Secret Key configured:", Boolean(PAYSTACK_SECRET_KEY));
+  console.log("Paystack Public Key configured:", Boolean(PAYSTACK_PUBLIC_KEY));
+});
