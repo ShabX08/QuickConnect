@@ -143,10 +143,10 @@ app.get("/payment/callback", async (req, res) => {
 
     if (hubnetData.status && hubnetData.code === "0000") {
       console.log(`Successfully sent data bundle for reference: ${reference}`);
-      return res.redirect(`${BASE_URL}/index.html?status=success&message=Payment successful and data bundle sent`);
+      return res.redirect(`${BASE_URL}/payment-success.html`);
     } else {
       console.error("Failed to send data bundle:", hubnetData);
-      return res.redirect(`${BASE_URL}/index.html?status=hubnet_error&message=Failed to send data bundle`);
+      return res.redirect(`${BASE_URL}/payment-failed.html`);
     }
   } catch (error) {
     console.error("Error during payment verification or Hubnet transaction:", error);
