@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 const port = process.env.PORT || 3000
-const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
+const BASE_URL = process.env.BASE_URL || `https://quickconnectgh.web.app`
 
 app.use(cors())
 app.use(express.static(path.join(__dirname, "public")))
