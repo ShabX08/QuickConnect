@@ -13,7 +13,8 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 const port = process.env.PORT || 3000
-const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://your-firebase-app-url.web.app"
+const BASE_URL = process.env.BASE_URL || `http://localhost:${port}` // Added BASE_URL
 
 app.use(cors())
 app.use(express.static(path.join(__dirname, "public")))
@@ -128,7 +129,7 @@ app.post("/api/initiate-payment", async (req, res) => {
     const payload = {
       amount: amountInKobo,
       email,
-      callback_url: `${BASE_URL}/payment/callback`,
+      callback_url: `${BASE_URL}/payment/callback`, // This should point to your Render backend
       reference,
       metadata: { network, phone, volume },
     }
@@ -149,15 +150,15 @@ app.post("/api/initiate-payment", async (req, res) => {
 // Payment Callback
 app.get("/payment/callback", async (req, res) => {
   const { reference } = req.query
-  if (!reference) return res.redirect(`${BASE_URL}/index.html?status=error&message=Missing reference`)
+  if (!reference) return res.redirect(`${FRONTEND_URL}?status=error&message=Missing reference`)
 
   const transaction = getTransactionByReference(reference)
   if (!transaction) {
-    return res.redirect(`${BASE_URL}/index.html?status=error&message=Invalid transaction`)
+    return res.redirect(`${FRONTEND_URL}?status=error&message=Invalid transaction`)
   }
 
   if (transaction.status === STATUS.COMPLETED) {
-    return res.redirect(`${BASE_URL}/index.html?status=success&reference=${reference}`)
+    return res.redirect(`${FRONTEND_URL}?status=success&reference=${reference}`)
   }
 
   try {
@@ -174,8 +175,8 @@ app.get("/payment/callback", async (req, res) => {
       phone: transaction.phone,
       volume: transaction.volume.toString(),
       reference,
-      referrer: transaction.phone, // Optional: Using the same phone number as referrer
-      webhook: `${BASE_URL}/hubnet/webhook`, // Optional: Add a webhook URL if you want to receive status updates
+      referrer: transaction.phone,
+      webhook: `${BASE_URL}/hubnet/webhook`, // Using BASE_URL here
     }
     const hubnetData = await processHubnetTransaction(hubnetPayload)
 
@@ -183,15 +184,13 @@ app.get("/payment/callback", async (req, res) => {
 
     if (hubnetData.status && hubnetData.data && hubnetData.data.code === "0000") {
       updateTransaction(reference, { status: STATUS.COMPLETED })
-      return res.redirect(`${BASE_URL}/index.html?status=success&reference=${reference}`)
+      return res.redirect(`${FRONTEND_URL}?status=success&reference=${reference}`)
     }
     throw new Error("Hubnet processing failed")
   } catch (error) {
     console.error("❌ Error processing transaction:", error)
     updateTransaction(reference, { status: STATUS.FAILED })
-    return res.redirect(
-      `${BASE_URL}/index.html?status=error&message=Transaction processing failed&reference=${reference}`,
-    )
+    return res.redirect(`${FRONTEND_URL}?status=error&message=Transaction processing failed&reference=${reference}`)
   }
 })
 
@@ -253,3 +252,4 @@ app.listen(port, () => {
   console.log("🔑 Paystack Secret Key configured:", Boolean(PAYSTACK_SECRET_KEY))
   console.log("🔑 Paystack Public Key configured:", Boolean(PAYSTACK_PUBLIC_KEY))
 })
+
