@@ -66,52 +66,75 @@ function updateTransaction(reference, updates) {
 
 // Middleware
 function errorHandler(err, req, res, next) {
-  console.error(err.stack)
-  res.status(500).json({ status: "error", message: "An unexpected error occurred" })
+  console.error("Error:", err)
+  res.status(500).json({ status: "error", message: "An unexpected error occurred", error: err.message })
 }
 
 // Paystack Integration
 async function initializePaystackPayment(payload) {
-  const response = await fetch("https://api.paystack.co/transaction/initialize", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-    },
-    body: JSON.stringify(payload),
-  })
-  return await response.json()
+  try {
+    const response = await fetch("https://api.paystack.co/transaction/initialize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    })
+    return await response.json()
+  } catch (error) {
+    console.error("Error initializing Paystack payment:", error)
+    throw error
+  }
 }
 
 async function verifyPaystackPayment(reference) {
-  const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-    headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
-  })
-  return await response.json()
+  try {
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+    })
+    return await response.json()
+  } catch (error) {
+    console.error("Error verifying Paystack payment:", error)
+    throw error
+  }
 }
 
 // Hubnet Integration
 async function checkHubnetBalance() {
-  const response = await fetch("https://console.hubnet.app/live/api/context/business/transaction/check_balance", {
-    method: "GET",
-    headers: {
-      token: `Bearer ${HUBNET_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-  })
-  return await response.json()
+  try {
+    const response = await fetch("https://console.hubnet.app/live/api/context/business/transaction/check_balance", {
+      method: "GET",
+      headers: {
+        token: `Bearer ${HUBNET_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+    })
+    return await response.json()
+  } catch (error) {
+    console.error("Error checking Hubnet balance:", error)
+    throw error
+  }
 }
 
 async function processHubnetTransaction(payload) {
-  const response = await fetch("https://console.hubnet.app/live/api/context/business/transaction/mtn-new-transaction", {
-    method: "POST",
-    headers: {
-      token: `Bearer ${HUBNET_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  })
-  return await response.json()
+  try {
+    const response = await fetch(
+      "https://console.hubnet.app/live/api/context/business/transaction/mtn-new-transaction",
+      {
+        method: "POST",
+        headers: {
+          token: `Bearer ${HUBNET_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      },
+    )
+    return await response.json()
+  } catch (error) {
+    console.error("Error processing Hubnet transaction:", error)
+    throw error
+  }
 }
 
 // Routes
@@ -131,7 +154,6 @@ app.post("/api/initiate-payment", async (req, res) => {
     const payload = {
       amount: amountInKobo,
       email,
-      callback_url: `${BASE_URL}/payment/callback`,
       reference,
       metadata: { network, phone, volume },
     }
@@ -149,91 +171,49 @@ app.post("/api/initiate-payment", async (req, res) => {
   }
 })
 
-// Payment Callback
-app.get("/payment/callback", async (req, res) => {
-  const { reference } = req.query
-  if (!reference) return res.redirect(`${FRONTEND_URL}?status=error&message=Missing reference`)
-
-  const transaction = getTransactionByReference(reference)
-  if (!transaction) {
-    return res.redirect(`${FRONTEND_URL}?status=error&message=Invalid transaction`)
-  }
-
-  if (transaction.status === STATUS.COMPLETED) {
-    return res.redirect(
-      `${FRONTEND_URL}?status=success&message=Transaction completed successfully&reference=${reference}`,
-    )
+// Check Payment Status
+app.get("/api/check-payment-status/:reference", async (req, res) => {
+  const { reference } = req.params
+  if (!reference) {
+    return res.status(400).json({ status: "error", message: "Missing payment reference." })
   }
 
   try {
     const verifyData = await verifyPaystackPayment(reference)
 
-    if (!verifyData.status || verifyData.data.status !== "success") {
-      throw new Error("Payment verification failed")
+    if (!verifyData.status) {
+      return res.json({ status: "pending", message: "Payment not yet completed." })
     }
 
-    updateTransaction(reference, { status: STATUS.PROCESSING })
-    console.log(`✅ Payment verified: ${reference}, initiating Hubnet request...`)
-
-    const hubnetPayload = {
-      phone: transaction.phone,
-      volume: transaction.volume.toString(),
-      reference,
-      referrer: transaction.phone,
-      webhook: `${BASE_URL}/hubnet/webhook`,
-    }
-    const hubnetData = await processHubnetTransaction(hubnetPayload)
-
-    console.log("📡 Hubnet response:", hubnetData)
-
-    if (hubnetData.status && hubnetData.data && hubnetData.data.code === "0000") {
-      updateTransaction(reference, { status: STATUS.COMPLETED })
-      return res.redirect(
-        `${FRONTEND_URL}?status=success&message=Transaction completed successfully&reference=${reference}`,
-      )
-    }
-    throw new Error("Hubnet processing failed")
-  } catch (error) {
-    console.error("❌ Error processing transaction:", error)
-    updateTransaction(reference, { status: STATUS.FAILED })
-    return res.redirect(`${FRONTEND_URL}?status=error&message=Transaction processing failed&reference=${reference}`)
-  }
-})
-
-// Hubnet Webhook
-app.post("/hubnet/webhook", async (req, res) => {
-  const { reference, status } = req.body
-  console.log("Received Hubnet webhook:", req.body)
-
-  if (reference && status) {
-    const transaction = getTransactionByReference(reference)
-    if (transaction) {
-      updateTransaction(reference, { status: status === "success" ? STATUS.COMPLETED : STATUS.FAILED })
-
-      // Send a response to the frontend
-      try {
-        const frontendResponse = await fetch(`${FRONTEND_URL}/update-status`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            reference,
-            status: status === "success" ? "success" : "error",
-            message: status === "success" ? "Transaction completed successfully" : "Transaction failed",
-          }),
-        })
-
-        if (!frontendResponse.ok) {
-          console.error("Failed to send status update to frontend")
+    if (verifyData.data.status === "success") {
+      const transaction = getTransactionByReference(reference)
+      if (transaction) {
+        // Process Hubnet transaction
+        const hubnetPayload = {
+          phone: transaction.phone,
+          volume: transaction.volume.toString(),
+          reference,
+          referrer: transaction.phone,
         }
-      } catch (error) {
-        console.error("Error sending status update to frontend:", error)
-      }
-    }
-  }
+        const hubnetData = await processHubnetTransaction(hubnetPayload)
 
-  res.sendStatus(200)
+        if (hubnetData.status && hubnetData.data && hubnetData.data.code === "0000") {
+          updateTransaction(reference, { status: STATUS.COMPLETED })
+          return res.json({ status: "success", message: "Transaction completed successfully." })
+        } else {
+          updateTransaction(reference, { status: STATUS.ERROR })
+          return res.json({ status: "error", message: "Failed to process data bundle." })
+        }
+      } else {
+        return res.json({ status: "error", message: "Transaction not found." })
+      }
+    } else {
+      return res.json({ status: "pending", message: "Payment not yet completed." })
+    }
+  } catch (error) {
+    console.error("Error checking payment status:", error)
+    return res.status(500).json({ status: "error", message: "Failed to check payment status. Please try again." })
+  }
 })
 
 // Check Hubnet Balance
