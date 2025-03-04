@@ -1,19 +1,15 @@
 {
-  "name": "whatsapp-bot",
+  "name": "quick-connect",
   "version": "1.0.0",
-  "description": "WhatsApp Bot using Baileys",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "@hapi/boom": "^10.0.1",
-    "@whiskeysockets/baileys": "^6.5.0",
-    "chalk": "^4.1.2",
-    "figlet": "^1.6.0",
-    "qrcode-terminal": "^0.12.0"
-  },
-  "engines": {
-    "node": ">=14.0.0"
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.1"
   }
 }
