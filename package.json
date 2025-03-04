@@ -1,10 +1,10 @@
-echo '{
+{
   "name": "whatsapp-bot",
   "version": "1.0.0",
   "description": "WhatsApp Bot using Baileys",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
@@ -16,4 +16,4 @@ echo '{
   "engines": {
     "node": ">=14.0.0"
   }
-}' > package.json
+}
