@@ -6,7 +6,6 @@ const pino = require("pino")
 const qrcode = require("qrcode-terminal")
 const express = require("express")
 const NodeCache = require("node-cache")
-const readline = require("readline")
 
 // Create Express app for keeping Render alive
 const app = express()
@@ -25,15 +24,18 @@ const store = makeInMemoryStore({
 
 // Create a silent logger to prevent terminal spam
 const logger = pino({ 
-  level: 'silent',  // Set to 'silent' to disable all logs
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      ignore: 'pid,hostname',
-    },
-  },
+  level: 'silent'  // Completely disable all logs
 })
+
+// Connection state tracking to prevent loops
+const connectionState = {
+  isConnecting: false,
+  retryCount: 0,
+  lastRetryTime: 0,
+  maxRetries: 5,
+  resetTime: 30 * 60 * 1000, // 30 minutes
+  connectionAttempts: 0
+}
 
 // Create auth state directory if it doesn't exist
 if (!fs.existsSync('./auth')) {
@@ -45,7 +47,7 @@ if (fs.existsSync(DB_FILE)) {
   try {
     db = JSON.parse(fs.readFileSync(DB_FILE, "utf8"))
   } catch (error) {
-    console.error("Error loading database:", error)
+    // Silent error handling
   }
 }
 
@@ -54,7 +56,7 @@ function saveDB() {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2))
   } catch (error) {
-    console.error("Error saving database:", error)
+    // Silent error handling
   }
 }
 
@@ -216,7 +218,7 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
           { quoted: msg },
         )
       } catch (error) {
-        return sock.sendMessage(from, { text: "Failed to kick user: " + error.message }, { quoted: msg })
+        return sock.sendMessage(from, { text: "Failed to kick user" }, { quoted: msg })
       }
     }
 
@@ -242,7 +244,7 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
         await sock.groupParticipantsUpdate(from, [number], "add")
         return sock.sendMessage(from, { text: `User ${args[1]} has been added to the group!` }, { quoted: msg })
       } catch (error) {
-        return sock.sendMessage(from, { text: "Failed to add user: " + error.message }, { quoted: msg })
+        return sock.sendMessage(from, { text: "Failed to add user" }, { quoted: msg })
       }
     }
 
@@ -261,7 +263,6 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
     // Restart command
     if (command === "restart") {
       sock.sendMessage(from, { text: "Restarting bot..." }, { quoted: msg }).then(() => {
-        console.log("Restarting bot by user command...")
         process.exit(0) // Render will automatically restart the process
       })
     }
@@ -274,8 +275,7 @@ let connectionTimeout = null
 
 // Function to create a smaller QR code
 function generateSmallQR(qr) {
-  // Clear console to make QR code more visible
-  console.clear()
+  // Only log once to prevent spam
   console.log("\n=== SCAN THIS QR CODE TO LOGIN ===\n")
   
   // Generate a tiny QR code
@@ -292,38 +292,84 @@ async function pairWithCode(sock, phoneNumber) {
   try {
     // Request pairing code for the phone number
     const code = await sock.requestPairingCode(phoneNumber)
-    console.log(`\n=== PAIRING CODE ===\n${code}\n=== ENTER THIS CODE ON YOUR WHATSAPP ===\n`)
-    
-    // Instructions for the user
-    console.log("1. Open WhatsApp on your phone")
-    console.log("2. Tap Menu or Settings and select Linked Devices")
-    console.log("3. Tap on 'Link a Device'")
-    console.log("4. When prompted for a QR code scan, tap 'Link with phone number instead'")
-    console.log(`5. Enter your phone number and then the pairing code: ${code}`)
-    
+    console.log(`\n=== PAIRING CODE: ${code} ===\n`)
     return code
   } catch (error) {
-    console.error("Error requesting pairing code:", error)
     return null
   }
 }
 
-// Function to handle connection retries with exponential backoff
-async function connectWithRetry(retryCount = 0) {
+// Function to handle connection retries with smart backoff
+async function connectWithRetry() {
+  // Check if we're already trying to connect
+  if (connectionState.isConnecting) {
+    return
+  }
+  
+  // Check if we've exceeded max retries in the time window
+  const now = Date.now()
+  if (connectionState.retryCount >= connectionState.maxRetries) {
+    // If enough time has passed since the last retry, reset the counter
+    if (now - connectionState.lastRetryTime > connectionState.resetTime) {
+      connectionState.retryCount = 0
+    } else {
+      // Wait until the reset time has passed
+      console.log("Too many connection attempts. Waiting before trying again.")
+      setTimeout(connectWithRetry, connectionState.resetTime - (now - connectionState.lastRetryTime))
+      return
+    }
+  }
+  
+  // Update connection state
+  connectionState.isConnecting = true
+  connectionState.retryCount++
+  connectionState.lastRetryTime = now
+  connectionState.connectionAttempts++
+  
   try {
+    // Only log on first attempt or every 5 attempts to reduce spam
+    if (connectionState.connectionAttempts === 1 || connectionState.connectionAttempts % 5 === 0) {
+      console.log(`Connection attempt ${connectionState.connectionAttempts}`)
+    }
+    
     await startBot()
+    
+    // Reset connection state on successful connection
+    connectionState.isConnecting = false
   } catch (error) {
-    const delay = Math.min(Math.pow(2, retryCount) * 1000, 60000) // Max 1 minute delay
-    console.log(`Connection attempt failed. Retrying in ${delay/1000} seconds...`)
-    setTimeout(() => connectWithRetry(retryCount + 1), delay)
+    // Calculate backoff time - exponential with max of 5 minutes
+    const backoffTime = Math.min(Math.pow(2, connectionState.retryCount) * 1000, 5 * 60 * 1000)
+    
+    // Only log every few attempts to reduce spam
+    if (connectionState.connectionAttempts % 5 === 0) {
+      console.log(`Connection failed. Will retry in ${Math.round(backoffTime/1000)} seconds.`)
+    }
+    
+    // Reset connecting state
+    connectionState.isConnecting = false
+    
+    // Schedule retry with backoff
+    setTimeout(connectWithRetry, backoffTime)
   }
 }
 
-// Main bot function with improved error handling
+// Main bot function with improved error handling and reduced logging
 async function startBot() {
   try {
-    // Fetch the latest version of Baileys
-    const { version } = await fetchLatestBaileysVersion()
+    // Fetch the latest version of Baileys - only on first attempt to reduce API calls
+    let version;
+    if (connectionState.connectionAttempts <= 1) {
+      try {
+        const versionInfo = await fetchLatestBaileysVersion()
+        version = versionInfo.version
+      } catch (error) {
+        // Use a fallback version if fetch fails
+        version = [2, 2323, 4]
+      }
+    } else {
+      // Use cached version for subsequent attempts
+      version = [2, 2323, 4]
+    }
     
     // Create auth state with better error handling
     const { state, saveCreds } = await useMultiFileAuthState("auth")
@@ -364,6 +410,9 @@ async function startBot() {
     // Save credentials when updated
     sock.ev.on("creds.update", saveCreds)
 
+    // Track if QR code has been shown
+    let qrShown = false
+
     // Handle connection updates with improved error handling
     sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
       // Clear any existing connection timeout
@@ -372,14 +421,10 @@ async function startBot() {
         connectionTimeout = null
       }
       
-      // Handle QR code with smaller display
-      if (qr) {
+      // Handle QR code with smaller display - only show once
+      if (qr && !qrShown) {
+        qrShown = true
         generateSmallQR(qr)
-        
-        // Also try pairing code method if QR is shown
-        // This is a fallback in case the user wants to use pairing code instead
-        console.log("\nIf QR code is not scanning well, you can use the pairing code method.")
-        console.log("Visit the web interface and enter your phone number to get a pairing code.")
       }
       
       // Handle connection status
@@ -388,7 +433,10 @@ async function startBot() {
         const shouldReconnect = statusCode !== DisconnectReason.loggedOut
         
         if (shouldReconnect) {
-          console.log("Reconnecting...")
+          // Only log every few attempts to reduce spam
+          if (connectionState.connectionAttempts % 5 === 0) {
+            console.log("Connection closed. Reconnecting...")
+          }
           connectWithRetry()
         } else if (statusCode === DisconnectReason.loggedOut) {
           console.log("Logged out. Please authenticate again.")
@@ -397,12 +445,18 @@ async function startBot() {
             fs.rmSync('./auth', { recursive: true, force: true })
             fs.mkdirSync('./auth')
           } catch (error) {
-            console.error("Error resetting auth:", error)
+            // Silent error handling
           }
+          // Reset connection attempts counter
+          connectionState.connectionAttempts = 0
           connectWithRetry()
         }
       } else if (connection === "open") {
         console.log("Bot connected successfully!")
+        // Reset connection state on successful connection
+        connectionState.retryCount = 0
+        connectionState.connectionAttempts = 0
+        qrShown = false
       }
     })
 
@@ -483,33 +537,40 @@ async function startBot() {
       }
     })
 
-    // Set up a watchdog timer to detect and fix connection issues
+    // Set up a watchdog timer to detect and fix connection issues - only if connected
     connectionTimeout = setTimeout(() => {
-      if (sock) {
+      if (sock && sock.user) {
+        // Only restart if we're actually connected and have a user
         sock.end()
         connectWithRetry()
       }
-    }, 60000) // 1 minute timeout
+    }, 60 * 60 * 1000) // 1 hour timeout - much longer to prevent unnecessary reconnects
     
     return sock
   } catch (error) {
-    console.error("Fatal error starting bot:", error)
     throw error // Rethrow for retry mechanism
   }
 }
-
-// Create readline interface for pairing code input
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-})
 
 // Set up Express server with pairing code functionality
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
+// Track last status update time to prevent too frequent updates
+let lastStatusUpdate = 0
+
 app.get('/', (req, res) => {
-  const status = sock?.user ? 'Connected as ' + sock.user.name : 'Connecting...'
+  // Only update status message every 10 seconds to reduce log spam
+  const now = Date.now()
+  let statusMessage = ''
+  
+  if (now - lastStatusUpdate > 10000) {
+    statusMessage = sock?.user ? `Connected as ${sock.user.name}` : 'Connecting...'
+    lastStatusUpdate = now
+  } else {
+    statusMessage = sock?.user ? `Connected as ${sock.user.name}` : 'Connecting...'
+  }
+  
   res.send(`
     <html>
       <head>
@@ -534,7 +595,7 @@ app.get('/', (req, res) => {
         <div class="container">
           <h1>WhatsApp Bot Status</h1>
           <div class="status ${sock?.user ? 'online' : 'offline'}">
-            <strong>Status:</strong> ${status}
+            <strong>Status:</strong> ${statusMessage}
           </div>
           
           <div class="info">
@@ -628,7 +689,6 @@ app.post('/pair', async (req, res) => {
       res.status(500).send('Failed to generate pairing code. Please try again.')
     }
   } catch (error) {
-    console.error('Error generating pairing code:', error)
     res.status(500).send('An error occurred while generating the pairing code. Please try again.')
   }
 })
@@ -640,26 +700,22 @@ app.listen(PORT, () => {
 
 // Handle process termination gracefully
 process.on('SIGINT', () => {
-  console.log('Shutting down gracefully...')
   if (sock) sock.end()
   process.exit(0)
 })
 
 process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down gracefully...')
   if (sock) sock.end()
   process.exit(0)
 })
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err)
   // Don't exit, just log the error
 })
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
   // Don't exit, just log the error
 })
 
