@@ -1,63 +1,155 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, makeInMemoryStore } = require("@whiskeysockets/baileys")
+const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys")
 const { Boom } = require("@hapi/boom")
 const fs = require("fs")
 const path = require("path")
-const pino = require("pino")
 const qrcode = require("qrcode-terminal")
+const qrcodeWeb = require("qrcode")
+const figlet = require("figlet")
+const chalk = require("chalk")
 const express = require("express")
-const NodeCache = require("node-cache")
+const pino = require("pino")
 
-// Create Express app for keeping Render alive
+// Create a Pino logger
+const logger = pino({ level: "warn" })
+
+// Simple database to store user data and statuses
+const DB_FILE = path.join(__dirname, "bot_db.json")
+let db = { warned: {}, statuses: {} }
+
+// Web server configuration
+let PORT = process.env.PORT || 3000
 const app = express()
-const PORT = process.env.PORT || 3000
-
-// Simple database to store user data
-const DB_FILE = "bot_db.json"
-let db = { warned: {} }
-
-// Improved caching for better performance
-const msgRetryCounterCache = new NodeCache()
-// Create a store to cache messages (improves performance)
-const store = makeInMemoryStore({ 
-  logger: pino({ level: 'silent' }) 
-})
-
-// Create a silent logger to prevent terminal spam
-const logger = pino({ 
-  level: 'silent'  // Completely disable all logs
-})
-
-// Connection state tracking to prevent loops
-const connectionState = {
-  isConnecting: false,
-  retryCount: 0,
-  lastRetryTime: 0,
-  maxRetries: 5,
-  resetTime: 30 * 60 * 1000, // 30 minutes
-  connectionAttempts: 0
-}
-
-// Create auth state directory if it doesn't exist
-if (!fs.existsSync('./auth')) {
-  fs.mkdirSync('./auth')
-}
+let currentQR = null
+let server = null
 
 // Load database if exists
 if (fs.existsSync(DB_FILE)) {
   try {
     db = JSON.parse(fs.readFileSync(DB_FILE, "utf8"))
   } catch (error) {
-    // Silent error handling
+    console.error("Error loading database:", error)
   }
 }
 
-// Save database with error handling
+// Save database
 function saveDB() {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2))
-  } catch (error) {
-    // Silent error handling
-  }
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2))
+}
+
+// Fancy console log
+function fancyLog(text) {
+  console.log(chalk.cyan(figlet.textSync(text, { font: "Small" })))
+}
+
+// QR Code display configuration - EXTRA SMALL
+const QR_CONFIG = {
+  small: true,
+  scale: 1,
+  width: 30,
+  renderTo: "terminal",
+}
+
+// Setup web server for QR code access
+function setupWebServer() {
+  return new Promise((resolve, reject) => {
+    // QR code endpoint
+    app.get("/qr", (req, res) => {
+      if (!currentQR) {
+        return res.status(404).send("QR code not available yet. Please try again in a few moments.")
+      }
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>WhatsApp Bot QR Code</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                background-color: #f5f5f5;
+              }
+              .container {
+                text-align: center;
+                background-color: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                max-width: 90%;
+              }
+              h1 {
+                color: #128C7E;
+              }
+              .qr-container {
+                margin: 20px 0;
+              }
+              p {
+                color: #666;
+                margin-bottom: 20px;
+              }
+              .refresh {
+                margin-top: 20px;
+                color: #888;
+                font-size: 0.9em;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>WhatsApp Bot QR Code</h1>
+              <p>Scan this QR code with your WhatsApp to connect to the bot</p>
+              <div class="qr-container">
+                <img src="data:image/png;base64,${currentQR}" alt="WhatsApp QR Code" />
+              </div>
+              <p class="refresh">QR code expires after scanning. Refresh if needed.</p>
+            </div>
+          </body>
+        </html>
+      `)
+    })
+
+    // Add a root route to redirect to QR page
+    app.get("/", (req, res) => {
+      res.redirect("/qr")
+    })
+
+    // Start the server
+    server = app
+      .listen(PORT, "0.0.0.0", () => {
+        console.log(chalk.green(`✓ Web server running on port ${PORT}`))
+
+        // Get public URL information
+        const publicUrl = process.env.PUBLIC_URL || `http://localhost:${PORT}`
+        console.log(chalk.blue(`✓ Access QR code at: ${publicUrl}/qr`))
+
+        if (publicUrl.includes("localhost")) {
+          console.log(
+            chalk.yellow(
+              `To make this accessible from the internet, you can use a service like ngrok or deploy to a hosting service.`,
+            ),
+          )
+          console.log(chalk.yellow(`Example with ngrok: npx ngrok http ${PORT}`))
+        }
+
+        resolve()
+      })
+      .on("error", (err) => {
+        if (err.code === "EADDRINUSE") {
+          console.log(chalk.yellow(`Port ${PORT} is busy, trying next port...`))
+          PORT++
+          server.close()
+          setupWebServer().then(resolve).catch(reject)
+        } else {
+          reject(err)
+        }
+      })
+  })
 }
 
 // Command handler
@@ -70,23 +162,30 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
   // Help command
   if (command === "help") {
     const commands = [
-      "*Available Commands:*",
+      "*🌟 Available Commands 🌟*",
       "",
-      "*General Commands:*",
+      "*📚 General Commands:*",
       "• !help - Show this help message",
       "• !ping - Check if bot is online",
       "• !groupinfo - Show group information",
       "• !tagall [message] - Tag all members",
       "• !warn @user - Warn a user",
       "• !unwarn @user - Remove warning from a user",
+      "• !savequote [text] - Save a quote",
+      "• !getquote - Get a random saved quote",
+      "• !weather [city] - Get weather information",
+      "• !joke - Get a random joke",
+      "• !flip - Flip a coin",
+      "• !roll [number] - Roll a dice",
+      "• !calculate [expression] - Calculate a mathematical expression",
       "",
-      "*Admin Commands:*",
+      "*👑 Admin Commands:*",
       "• !kick @user - Remove a user from group",
       "• !add number - Add a user to group",
       "• !broadcast message - Send a broadcast message",
       "• !restart - Restart the bot",
       "",
-      "Note: Replace @user with an actual mention, and [message] or number with the appropriate text.",
+      "Note: Replace @user with an actual mention, and [text] with appropriate content.",
       "Admin commands can only be used by group admins.",
     ].join("\n")
 
@@ -95,18 +194,20 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
 
   // Ping command
   if (command === "ping") {
-    return sock.sendMessage(from, { text: "Pong! 🏓" }, { quoted: msg })
+    return sock.sendMessage(from, { text: "Pong! 🏓 Bot is online and ready!" }, { quoted: msg })
   }
 
   // Group info command
   if (command === "groupinfo" && groupMetadata) {
     const info = [
-      `*Group Name:* ${groupMetadata.subject}`,
-      `*Group ID:* ${from}`,
-      `*Created By:* ${groupMetadata.owner || "Unknown"}`,
-      `*Created On:* ${new Date(groupMetadata.creation * 1000).toLocaleString()}`,
-      `*Member Count:* ${groupMetadata.participants.length}`,
-      `*Description:* ${groupMetadata.desc || "No description"}`,
+      `*📊 Group Information 📊*`,
+      ``,
+      `*🏷️ Name:* ${groupMetadata.subject}`,
+      `*🆔 ID:* ${from}`,
+      `*👑 Created By:* ${groupMetadata.owner || "Unknown"}`,
+      `*📅 Created On:* ${new Date(groupMetadata.creation * 1000).toLocaleString()}`,
+      `*👥 Member Count:* ${groupMetadata.participants.length}`,
+      `*📝 Description:* ${groupMetadata.desc || "No description"}`,
     ].join("\n")
 
     return sock.sendMessage(from, { text: info }, { quoted: msg })
@@ -118,10 +219,10 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
       return sock.sendMessage(from, { text: "This command can only be used in groups!" }, { quoted: msg })
     }
 
-    const message = args.slice(1).join(" ") || "ShabX 6x6y Bot"
+    const message = args.slice(1).join(" ") || "Hello everyone!"
     const mentions = groupMetadata.participants.map((participant) => participant.id)
 
-    let text = `*${message}*\n\n`
+    let text = `*📢 Attention Everyone! 📢*\n\n${message}\n\n`
     for (const participant of groupMetadata.participants) {
       text += `@${participant.id.split("@")[0]}\n`
     }
@@ -154,7 +255,7 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
     return sock.sendMessage(
       from,
       {
-        text: `@${targetUser.split("@")[0]} has been warned! (${db.warned[targetUser]} warnings)`,
+        text: `⚠️ @${targetUser.split("@")[0]} has been warned! (${db.warned[targetUser]} warnings)`,
         mentions: [targetUser],
       },
       { quoted: msg },
@@ -180,11 +281,91 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
     return sock.sendMessage(
       from,
       {
-        text: `Warning removed from @${targetUser.split("@")[0]}!`,
+        text: `✅ Warning removed from @${targetUser.split("@")[0]}!`,
         mentions: [targetUser],
       },
       { quoted: msg },
     )
+  }
+
+  // Save quote command
+  if (command === "savequote") {
+    const quote = args.slice(1).join(" ")
+    if (!quote) {
+      return sock.sendMessage(from, { text: "Please provide a quote to save!" }, { quoted: msg })
+    }
+
+    if (!db.statuses[from]) {
+      db.statuses[from] = []
+    }
+    db.statuses[from].push(quote)
+    saveDB()
+
+    return sock.sendMessage(from, { text: "✅ Quote saved successfully!" }, { quoted: msg })
+  }
+
+  // Get quote command
+  if (command === "getquote") {
+    if (!db.statuses[from] || db.statuses[from].length === 0) {
+      return sock.sendMessage(from, { text: "No quotes saved for this group!" }, { quoted: msg })
+    }
+
+    const randomQuote = db.statuses[from][Math.floor(Math.random() * db.statuses[from].length)]
+    return sock.sendMessage(from, { text: `📜 Random Quote:\n\n"${randomQuote}"` }, { quoted: msg })
+  }
+
+  // Weather command (Note: This is a mock implementation)
+  if (command === "weather") {
+    const city = args.slice(1).join(" ")
+    if (!city) {
+      return sock.sendMessage(from, { text: "Please provide a city name!" }, { quoted: msg })
+    }
+
+    const mockWeather = ["Sunny", "Cloudy", "Rainy", "Windy", "Snowy"][Math.floor(Math.random() * 5)]
+    const mockTemp = Math.floor(Math.random() * 35) + 5 // Random temperature between 5°C and 40°C
+
+    return sock.sendMessage(from, { text: `🌤️ Weather in ${city}:\n${mockWeather}, ${mockTemp}°C` }, { quoted: msg })
+  }
+
+  // Joke command
+  if (command === "joke") {
+    const jokes = [
+      "Why don't scientists trust atoms? Because they make up everything!",
+      "Why did the scarecrow win an award? He was outstanding in his field!",
+      "Why don't eggs tell jokes? They'd crack each other up!",
+      "Why don't skeletons fight each other? They don't have the guts!",
+      "What do you call a fake noodle? An impasta!",
+    ]
+    const randomJoke = jokes[Math.floor(Math.random() * jokes.length)]
+    return sock.sendMessage(from, { text: `😂 Here's a joke:\n\n${randomJoke}` }, { quoted: msg })
+  }
+
+  // Flip coin command
+  if (command === "flip") {
+    const result = Math.random() < 0.5 ? "Heads" : "Tails"
+    return sock.sendMessage(from, { text: `🪙 Coin flip result: ${result}` }, { quoted: msg })
+  }
+
+  // Roll dice command
+  if (command === "roll") {
+    const sides = Number.parseInt(args[1]) || 6
+    const result = Math.floor(Math.random() * sides) + 1
+    return sock.sendMessage(from, { text: `🎲 Dice roll result (${sides}-sided): ${result}` }, { quoted: msg })
+  }
+
+  // Calculate command
+  if (command === "calculate") {
+    const expression = args.slice(1).join(" ")
+    if (!expression) {
+      return sock.sendMessage(from, { text: "Please provide a mathematical expression!" }, { quoted: msg })
+    }
+
+    try {
+      const result = eval(expression)
+      return sock.sendMessage(from, { text: `🧮 Result: ${expression} = ${result}` }, { quoted: msg })
+    } catch (error) {
+      return sock.sendMessage(from, { text: "Invalid expression. Please try again." }, { quoted: msg })
+    }
   }
 
   // Admin commands
@@ -212,13 +393,13 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
         return sock.sendMessage(
           from,
           {
-            text: `@${targetUser.split("@")[0]} has been kicked from the group!`,
+            text: `👢 @${targetUser.split("@")[0]} has been kicked from the group!`,
             mentions: [targetUser],
           },
           { quoted: msg },
         )
       } catch (error) {
-        return sock.sendMessage(from, { text: "Failed to kick user" }, { quoted: msg })
+        return sock.sendMessage(from, { text: "Failed to kick user: " + error.message }, { quoted: msg })
       }
     }
 
@@ -242,9 +423,9 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
 
       try {
         await sock.groupParticipantsUpdate(from, [number], "add")
-        return sock.sendMessage(from, { text: `User ${args[1]} has been added to the group!` }, { quoted: msg })
+        return sock.sendMessage(from, { text: `✅ User ${args[1]} has been added to the group!` }, { quoted: msg })
       } catch (error) {
-        return sock.sendMessage(from, { text: "Failed to add user" }, { quoted: msg })
+        return sock.sendMessage(from, { text: "Failed to add user: " + error.message }, { quoted: msg })
       }
     }
 
@@ -256,269 +437,217 @@ async function handleCommand(sock, msg, from, sender, groupMetadata, text) {
       }
 
       return sock.sendMessage(from, {
-        text: `*BROADCAST*\n\n${message}`,
+        text: `*📢 BROADCAST*\n\n${message}`,
       })
     }
 
     // Restart command
     if (command === "restart") {
-      sock.sendMessage(from, { text: "Restarting bot..." }, { quoted: msg }).then(() => {
-        process.exit(0) // Render will automatically restart the process
-      })
+      sock.sendMessage(from, { text: "🔄 Restarting bot..." }, { quoted: msg }).then(() => process.exit(0))
     }
   }
 }
 
-// Global socket variable
-let sock = null
-let connectionTimeout = null
-
-// Function to create a smaller QR code
-function generateSmallQR(qr) {
-  // Only log once to prevent spam
-  console.log("\n=== SCAN THIS QR CODE TO LOGIN ===\n")
-  
-  // Generate a tiny QR code
-  qrcode.generate(qr, { 
-    small: true,
-    scale: 1  // Smallest possible scale
-  })
-  
-  console.log("\n=== SCAN ABOVE QR CODE TO LOGIN ===\n")
+// Handle message extraction
+function extractMessageContent(msg) {
+  return (
+    msg.message.conversation ||
+    msg.message.extendedTextMessage?.text ||
+    msg.message.imageMessage?.caption ||
+    msg.message.videoMessage?.caption ||
+    ""
+  ).trim()
 }
 
-// Function to handle pairing code authentication
-async function pairWithCode(sock, phoneNumber) {
+// Handle QR code generation
+async function generateQRCode(qr) {
+  // Generate QR code for web display
   try {
-    // Request pairing code for the phone number
-    const code = await sock.requestPairingCode(phoneNumber)
-    console.log(`\n=== PAIRING CODE: ${code} ===\n`)
-    return code
-  } catch (error) {
-    return null
-  }
-}
-
-// Function to handle connection retries with smart backoff
-async function connectWithRetry() {
-  // Check if we're already trying to connect
-  if (connectionState.isConnecting) {
-    return
-  }
-  
-  // Check if we've exceeded max retries in the time window
-  const now = Date.now()
-  if (connectionState.retryCount >= connectionState.maxRetries) {
-    // If enough time has passed since the last retry, reset the counter
-    if (now - connectionState.lastRetryTime > connectionState.resetTime) {
-      connectionState.retryCount = 0
-    } else {
-      // Wait until the reset time has passed
-      console.log("Too many connection attempts. Waiting before trying again.")
-      setTimeout(connectWithRetry, connectionState.resetTime - (now - connectionState.lastRetryTime))
-      return
-    }
-  }
-  
-  // Update connection state
-  connectionState.isConnecting = true
-  connectionState.retryCount++
-  connectionState.lastRetryTime = now
-  connectionState.connectionAttempts++
-  
-  try {
-    // Only log on first attempt or every 5 attempts to reduce spam
-    if (connectionState.connectionAttempts === 1 || connectionState.connectionAttempts % 5 === 0) {
-      console.log(`Connection attempt ${connectionState.connectionAttempts}`)
-    }
-    
-    await startBot()
-    
-    // Reset connection state on successful connection
-    connectionState.isConnecting = false
-  } catch (error) {
-    // Calculate backoff time - exponential with max of 5 minutes
-    const backoffTime = Math.min(Math.pow(2, connectionState.retryCount) * 1000, 5 * 60 * 1000)
-    
-    // Only log every few attempts to reduce spam
-    if (connectionState.connectionAttempts % 5 === 0) {
-      console.log(`Connection failed. Will retry in ${Math.round(backoffTime/1000)} seconds.`)
-    }
-    
-    // Reset connecting state
-    connectionState.isConnecting = false
-    
-    // Schedule retry with backoff
-    setTimeout(connectWithRetry, backoffTime)
-  }
-}
-
-// Main bot function with improved error handling and reduced logging
-async function startBot() {
-  try {
-    // Fetch the latest version of Baileys - only on first attempt to reduce API calls
-    let version;
-    if (connectionState.connectionAttempts <= 1) {
-      try {
-        const versionInfo = await fetchLatestBaileysVersion()
-        version = versionInfo.version
-      } catch (error) {
-        // Use a fallback version if fetch fails
-        version = [2, 2323, 4]
-      }
-    } else {
-      // Use cached version for subsequent attempts
-      version = [2, 2323, 4]
-    }
-    
-    // Create auth state with better error handling
-    const { state, saveCreds } = await useMultiFileAuthState("auth")
-    
-    // Create socket connection with improved settings
-    sock = makeWASocket({
-      version,
-      auth: {
-        creds: state.creds,
-        // Use caching for better performance
-        keys: makeCacheableSignalKeyStore(state.keys, logger),
-      },
-      printQRInTerminal: false, // We'll handle QR code display ourselves
-      logger,
-      msgRetryCounterCache,
-      defaultQueryTimeoutMs: 30000, // Reduced timeout for faster response
-      connectTimeoutMs: 60000,
-      keepAliveIntervalMs: 25000, // Keep connection alive
-      emitOwnEvents: true, // For better event handling
-      browser: ['WhatsApp Bot', 'Chrome', '103.0.5060.114'], // More stable browser signature
-      markOnlineOnConnect: true, // Mark as online when connected
-      syncFullHistory: false, // Don't sync full history for faster startup
-      generateHighQualityLinkPreview: false, // Disable link previews for better performance
-      transactionOpts: { maxCommitRetries: 10, delayBetweenTriesMs: 3000 }, // More reliable transactions
-      getMessage: async (key) => {
-        // Get message from store to reduce server requests
-        if (store) {
-          const msg = await store.loadMessage(key.remoteJid, key.id)
-          return msg?.message || undefined
-        }
-        return { conversation: '' }
-      }
+    currentQR = await qrcodeWeb.toDataURL(qr, {
+      errorCorrectionLevel: "L",
+      margin: 1,
+      scale: 4,
+      width: 200,
     })
-    
-    // Bind the store to the socket
-    store.bind(sock.ev)
+    currentQR = currentQR.split(",")[1] // Remove the data URL prefix
+  } catch (err) {
+    console.error("Failed to generate QR code for web:", err)
+  }
 
-    // Save credentials when updated
-    sock.ev.on("creds.update", saveCreds)
+  // Generate extra small QR code for terminal
+  console.log("\n")
+  console.log(chalk.yellow("┌───────────────────────┐"))
+  console.log(chalk.yellow("│     SCAN QR CODE      │"))
+  console.log(chalk.yellow("│   (Extra Small Size)  │"))
+  console.log(chalk.yellow("└───────────────────────┘"))
 
-    // Track if QR code has been shown
-    let qrShown = false
+  // Use custom settings for smallest possible QR in terminal
+  qrcode.generate(qr, {
+    small: true,
+    scale: 1,
+    width: 2,
+    margin: 0,
+  })
 
-    // Handle connection updates with improved error handling
-    sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
-      // Clear any existing connection timeout
-      if (connectionTimeout) {
-        clearTimeout(connectionTimeout)
-        connectionTimeout = null
+  // Get public URL information
+  const publicUrl = process.env.PUBLIC_URL || `http://localhost:${PORT}`
+
+  console.log(chalk.yellow("┌───────────────────────────────────┐"))
+  console.log(chalk.yellow("│  Access QR code via web browser:  │"))
+  console.log(chalk.yellow(`│  ${publicUrl}/qr`.padEnd(35) + " │"))
+  console.log(chalk.yellow("└───────────────────────────────────┘"))
+}
+
+// Connection manager
+class ConnectionManager {
+  constructor() {
+    this.sock = null
+    this.retries = 0
+    this.maxRetries = 5
+    this.retryDelay = 5000
+    this.qrRetries = 0
+    this.maxQrRetries = 3
+    this.qrCode = null
+  }
+
+  async start() {
+    try {
+      // Create auth state
+      const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, "auth_info"))
+
+      // Create socket connection with optimized settings
+      this.sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: false, // Disable default QR printing
+        defaultQueryTimeoutMs: 60000,
+        qrTimeout: 90000, // Extended timeout for QR scanning
+        connectTimeoutMs: 60000,
+        browser: ["WhatsApp Bot", "Chrome", "103.0.5060.114"],
+        logger: logger, // Use the Pino logger
+      })
+
+      // Save credentials when updated
+      this.sock.ev.on("creds.update", saveCreds)
+
+      // Handle connection updates
+      this.sock.ev.on("connection.update", this.handleConnectionUpdate.bind(this))
+
+      this.setupMessageHandlers()
+      this.setupGroupHandlers()
+
+      return this.sock
+    } catch (error) {
+      console.error("Error in start method:", error)
+      this.handleReconnection()
+    }
+  }
+
+  async handleConnectionUpdate({ connection, lastDisconnect, qr }) {
+    try {
+      if (qr) {
+        this.qrCode = qr
+        if (this.qrRetries < this.maxQrRetries) {
+          await generateQRCode(this.qrCode)
+          this.qrRetries++
+        } else {
+          console.log(chalk.red("Max QR code retries reached. Please restart the bot manually."))
+          this.sock?.ws.close()
+          process.exit(1)
+        }
       }
-      
-      // Handle QR code with smaller display - only show once
-      if (qr && !qrShown) {
-        qrShown = true
-        generateSmallQR(qr)
-      }
-      
-      // Handle connection status
+
       if (connection === "close") {
-        const statusCode = lastDisconnect?.error?.output?.statusCode
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut
-        
+        const shouldReconnect = new Boom(lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut
+
+        console.log(
+          chalk.red(`Connection closed due to ${lastDisconnect?.error?.message || "unknown error"}`),
+          chalk.green(`Reconnecting: ${shouldReconnect ? "Yes" : "No"}`),
+        )
+
         if (shouldReconnect) {
-          // Only log every few attempts to reduce spam
-          if (connectionState.connectionAttempts % 5 === 0) {
-            console.log("Connection closed. Reconnecting...")
-          }
-          connectWithRetry()
-        } else if (statusCode === DisconnectReason.loggedOut) {
-          console.log("Logged out. Please authenticate again.")
-          // Delete auth folder to force new login
-          try {
-            fs.rmSync('./auth', { recursive: true, force: true })
-            fs.mkdirSync('./auth')
-          } catch (error) {
-            // Silent error handling
-          }
-          // Reset connection attempts counter
-          connectionState.connectionAttempts = 0
-          connectWithRetry()
+          this.handleReconnection()
         }
       } else if (connection === "open") {
-        console.log("Bot connected successfully!")
-        // Reset connection state on successful connection
-        connectionState.retryCount = 0
-        connectionState.connectionAttempts = 0
-        qrShown = false
-      }
-    })
+        // Clear QR code when connected
+        currentQR = null
+        this.retries = 0
+        this.qrRetries = 0
+        this.qrCode = null
 
-    // Handle messages with improved error handling and NO console logging
-    sock.ev.on("messages.upsert", async ({ messages, type }) => {
+        fancyLog("Bot Connected!")
+        console.log(chalk.green("✓ Successfully connected to WhatsApp"))
+        console.log(chalk.green("✓ Bot is now online and ready to use"))
+      }
+    } catch (error) {
+      console.error("Error in handleConnectionUpdate:", error)
+      this.handleReconnection()
+    }
+  }
+
+  handleReconnection() {
+    if (this.retries < this.maxRetries) {
+      this.retries++
+      console.log(chalk.yellow(`Reconnection attempt ${this.retries} of ${this.maxRetries}`))
+      setTimeout(() => this.start(), this.retryDelay)
+    } else {
+      console.error(chalk.red("Max reconnection attempts reached. Please restart the bot manually."))
+      process.exit(1)
+    }
+  }
+
+  setupMessageHandlers() {
+    // Handle messages
+    this.sock.ev.on("messages.upsert", async ({ messages, type }) => {
       try {
-        if (!messages || !messages[0]) return
-        
         const msg = messages[0]
         if (!msg.message) return
 
         const from = msg.key.remoteJid
-        if (!from) return
-        
         const isGroup = from.endsWith("@g.us")
         const sender = msg.key.participant || from
 
         // Get message content
-        const body = (
-          msg.message.conversation ||
-          msg.message.extendedTextMessage?.text ||
-          msg.message.imageMessage?.caption ||
-          msg.message.videoMessage?.caption ||
-          ""
-        ).trim()
+        const body = extractMessageContent(msg)
 
         // Handle group-specific actions
         let groupMetadata = null
         if (isGroup) {
-          try {
-            groupMetadata = await sock.groupMetadata(from)
-          } catch (error) {
-            // Silent error handling
-          }
+          groupMetadata = await this.sock.groupMetadata(from)
 
           // Handle commands
           if (body.startsWith("!")) {
             const text = body.slice(1)
-            return await handleCommand(sock, msg, from, sender, groupMetadata, text)
+            await handleCommand(this.sock, msg, from, sender, groupMetadata, text)
           }
         }
-        
-        // No console logging of messages
+
+        // Log message for debugging
+        console.log(chalk.green(`[${new Date().toLocaleString()}] Message from ${sender} in ${from}: ${body}`))
       } catch (error) {
-        // Silent error handling
+        console.error("Error processing message:", error)
       }
     })
+  }
 
+  setupGroupHandlers() {
     // Handle group participants update (joins/leaves)
-    sock.ev.on("group-participants.update", async ({ id, participants, action }) => {
+    this.sock.ev.on("group-participants.update", async ({ id, participants, action }) => {
       try {
         // Get group metadata
-        const groupMetadata = await sock.groupMetadata(id)
+        const groupMetadata = await this.sock.groupMetadata(id)
 
         // Handle new participants
         if (action === "add") {
           for (const participant of participants) {
             // Send welcome message
-            sock.sendMessage(id, {
-              text: `Welcome @${participant.split("@")[0]} to ${groupMetadata.subject}! 👋`,
-              mentions: [participant],
-            })
+            try {
+              await this.sock.sendMessage(id, {
+                text: `👋 Welcome @${participant.split("@")[0]} to ${groupMetadata.subject}!`,
+                mentions: [participant],
+              })
+            } catch (error) {
+              console.error("Error sending welcome message:", error)
+            }
           }
         }
 
@@ -526,199 +655,44 @@ async function startBot() {
         if (action === "remove") {
           for (const participant of participants) {
             // Send goodbye message
-            sock.sendMessage(id, {
-              text: `@${participant.split("@")[0]} has left the group. Goodbye! 👋`,
-              mentions: [participant],
-            })
+            try {
+              await this.sock.sendMessage(id, {
+                text: `👋 @${participant.split("@")[0]} has left the group. Goodbye!`,
+                mentions: [participant],
+              })
+            } catch (error) {
+              console.error("Error sending goodbye message:", error)
+            }
           }
         }
       } catch (error) {
-        // Silent error handling
+        console.error("Error handling group update:", error)
       }
     })
-
-    // Set up a watchdog timer to detect and fix connection issues - only if connected
-    connectionTimeout = setTimeout(() => {
-      if (sock && sock.user) {
-        // Only restart if we're actually connected and have a user
-        sock.end()
-        connectWithRetry()
-      }
-    }, 60 * 60 * 1000) // 1 hour timeout - much longer to prevent unnecessary reconnects
-    
-    return sock
-  } catch (error) {
-    throw error // Rethrow for retry mechanism
   }
 }
 
-// Set up Express server with pairing code functionality
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-
-// Track last status update time to prevent too frequent updates
-let lastStatusUpdate = 0
-
-app.get('/', (req, res) => {
-  // Only update status message every 10 seconds to reduce log spam
-  const now = Date.now()
-  let statusMessage = ''
-  
-  if (now - lastStatusUpdate > 10000) {
-    statusMessage = sock?.user ? `Connected as ${sock.user.name}` : 'Connecting...'
-    lastStatusUpdate = now
-  } else {
-    statusMessage = sock?.user ? `Connected as ${sock.user.name}` : 'Connecting...'
-  }
-  
-  res.send(`
-    <html>
-      <head>
-        <title>WhatsApp Bot Status</title>
-        <meta http-equiv="refresh" content="30">
-        <style>
-          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.6; background-color: #f5f5f5; }
-          .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .status { padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-          .online { background-color: #d4edda; color: #155724; }
-          .offline { background-color: #f8d7da; color: #721c24; }
-          .info { background-color: #d1ecf1; color: #0c5460; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-          .form-group { margin-bottom: 15px; }
-          label { display: block; margin-bottom: 5px; font-weight: bold; }
-          input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-          button { background-color: #4CAF50; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
-          button:hover { background-color: #45a049; }
-          .qr-info { background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin-top: 20px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>WhatsApp Bot Status</h1>
-          <div class="status ${sock?.user ? 'online' : 'offline'}">
-            <strong>Status:</strong> ${statusMessage}
-          </div>
-          
-          <div class="info">
-            <p>This page refreshes automatically every 30 seconds.</p>
-            <p>Last checked: ${new Date().toLocaleString()}</p>
-          </div>
-          
-          ${!sock?.user ? `
-          <div class="pairing">
-            <h2>Connect with Pairing Code</h2>
-            <p>If QR code scanning is difficult, you can use a pairing code instead:</p>
-            
-            <form action="/pair" method="post">
-              <div class="form-group">
-                <label for="phoneNumber">Your Phone Number (with country code):</label>
-                <input type="text" id="phoneNumber" name="phoneNumber" placeholder="e.g. +1234567890" required>
-              </div>
-              <button type="submit">Get Pairing Code</button>
-            </form>
-            
-            <div class="qr-info">
-              <p>If you prefer to scan a QR code, check the console logs in your Render dashboard.</p>
-            </div>
-          </div>
-          ` : ''}
-        </div>
-      </body>
-    </html>
-  `)
-})
-
-// Endpoint to handle pairing code requests
-app.post('/pair', async (req, res) => {
-  const { phoneNumber } = req.body
-  
-  if (!phoneNumber) {
-    return res.status(400).send('Phone number is required')
-  }
-  
-  // Format phone number (remove spaces, make sure it has + prefix)
-  const formattedNumber = phoneNumber.replace(/\s+/g, '').startsWith('+') 
-    ? phoneNumber.replace(/\s+/g, '') 
-    : '+' + phoneNumber.replace(/\s+/g, '')
-  
-  try {
-    if (!sock) {
-      return res.status(500).send('Bot is not initialized yet. Please try again in a few moments.')
-    }
-    
-    const code = await pairWithCode(sock, formattedNumber)
-    
-    if (code) {
-      res.send(`
-        <html>
-          <head>
-            <title>WhatsApp Pairing Code</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.6; background-color: #f5f5f5; }
-              .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-              .code { font-size: 32px; letter-spacing: 5px; text-align: center; margin: 20px 0; font-weight: bold; }
-              .steps { background-color: #d1ecf1; color: #0c5460; padding: 15px; border-radius: 5px; margin: 20px 0; }
-              .steps ol { margin-left: 20px; }
-              .back { display: inline-block; margin-top: 20px; color: #0366d6; text-decoration: none; }
-              .back:hover { text-decoration: underline; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h1>WhatsApp Pairing Code</h1>
-              <p>Use this code to link your WhatsApp account:</p>
-              
-              <div class="code">${code}</div>
-              
-              <div class="steps">
-                <h3>How to use this code:</h3>
-                <ol>
-                  <li>Open WhatsApp on your phone</li>
-                  <li>Tap Menu or Settings and select <strong>Linked Devices</strong></li>
-                  <li>Tap on <strong>Link a Device</strong></li>
-                  <li>When prompted for a QR code scan, tap <strong>Link with phone number instead</strong></li>
-                  <li>Enter your phone number and then the pairing code shown above</li>
-                </ol>
-              </div>
-              
-              <a href="/" class="back">← Back to Status Page</a>
-            </div>
-          </body>
-        </html>
-      `)
-    } else {
-      res.status(500).send('Failed to generate pairing code. Please try again.')
-    }
-  } catch (error) {
-    res.status(500).send('An error occurred while generating the pairing code. Please try again.')
-  }
-})
-
-// Start the Express server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
-
-// Handle process termination gracefully
-process.on('SIGINT', () => {
-  if (sock) sock.end()
-  process.exit(0)
-})
-
-process.on('SIGTERM', () => {
-  if (sock) sock.end()
-  process.exit(0)
-})
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
-  // Don't exit, just log the error
-})
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  // Don't exit, just log the error
-})
-
 // Start the bot
-console.log("Starting WhatsApp Bot...")
-connectWithRetry()
+async function main() {
+  try {
+    fancyLog("Starting WhatsApp Bot")
+    console.log(chalk.blue("Initializing connection..."))
+
+    await setupWebServer()
+
+    const connectionManager = new ConnectionManager()
+    await connectionManager.start()
+  } catch (error) {
+    console.error("Fatal error:", error)
+    process.exit(1)
+  }
+}
+
+// If running directly, start the bot
+if (require.main === module) {
+  main()
+}
+
+// Export the main function for potential use in other scripts
+module.exports = main
+
