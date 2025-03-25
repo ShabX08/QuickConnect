@@ -18,7 +18,9 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 
 app.use(cors())
 app.use(express.json())
-app.use(express.static(path.join(__dirname, "public")))
+
+// Remove this line since your static files are on Firebase, not locally
+// app.use(express.static(path.join(__dirname, "public")))
 
 const HUBNET_API_KEY = process.env.HUBNET_API_KEY
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
@@ -90,11 +92,12 @@ async function processHubnetTransaction(payload) {
   }
 }
 
+// Modify the root route to redirect to your Firebase-hosted frontend
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"))
+  res.redirect(FRONTEND_URL)
 })
 
-app.post("https://quick-connect-backend-4kug.onrender.com/api/initiate-payment", async (req, res) => {
+app.post("/api/initiate-payment", async (req, res) => {
   const { network, phone, volume, amount, email } = req.body
   if (!network || !phone || !volume || !amount || !email) {
     return res.status(400).json({ status: "error", message: "Missing required payment data." })
@@ -124,7 +127,7 @@ app.post("https://quick-connect-backend-4kug.onrender.com/api/initiate-payment",
   }
 })
 
-app.get("https://quick-connect-backend-4kug.onrender.com/api/verify-payment/:reference", async (req, res) => {
+app.get("/api/verify-payment/:reference", async (req, res) => {
   const { reference } = req.params
   if (!reference) {
     return res.status(400).json({ status: "error", message: "Missing payment reference." })
