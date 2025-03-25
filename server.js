@@ -100,7 +100,7 @@ app.get('*', (req, res, next) => {
   res.redirect(FRONTEND_URL + req.path)
 })
 
-app.post("/api/initiate-payment", async (req, res) => {
+app.post("https://quickconnect-tb6d.onrender.com/api/initiate-payment", async (req, res) => {
   const { network, phone, volume, amount, email } = req.body
   if (!network || !phone || !volume || !amount || !email) {
     return res.status(400).json({ status: "error", message: "Missing required payment data." })
@@ -130,7 +130,7 @@ app.post("/api/initiate-payment", async (req, res) => {
   }
 })
 
-app.get("/api/verify-payment/:reference", async (req, res) => {
+app.get("https://quickconnect-tb6d.onrender.com/api/verify-payment/:reference", async (req, res) => {
   const { reference } = req.params
   if (!reference) {
     return res.status(400).json({ status: "error", message: "Missing payment reference." })
