@@ -19,9 +19,6 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 app.use(cors())
 app.use(express.json())
 
-// Remove this line since your static files are on Firebase, not locally
-// app.use(express.static(path.join(__dirname, "public")))
-
 const HUBNET_API_KEY = process.env.HUBNET_API_KEY
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
 
@@ -92,9 +89,15 @@ async function processHubnetTransaction(payload) {
   }
 }
 
-// Modify the root route to redirect to your Firebase-hosted frontend
-app.get("/", (req, res) => {
-  res.redirect(FRONTEND_URL)
+// Redirect all non-API routes to the Firebase frontend
+app.get('*', (req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return next()
+  }
+  
+  // For all other routes, redirect to Firebase
+  res.redirect(FRONTEND_URL + req.path)
 })
 
 app.post("/api/initiate-payment", async (req, res) => {
