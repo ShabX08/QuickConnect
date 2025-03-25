@@ -13,13 +13,19 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 const port = process.env.PORT || 3000
-const FRONTEND_URL = process.env.FRONTEND_URL || `http://localhost:${port}`
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://quickconnect-db502.web.app"
 const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 
-app.use(cors())
+// Configure CORS to allow requests from your Firebase frontend
+app.use(cors({
+  origin: '*',  // Allow all origins for now, you can restrict this to your Firebase domain
+  methods: ['GET', 'POST'],
+  credentials: true
+}))
+
 app.use(express.json())
 
-// Remove this line since your static files are on Firebase, not locally
+// Remove static file serving since your frontend is on Firebase
 // app.use(express.static(path.join(__dirname, "public")))
 
 const HUBNET_API_KEY = process.env.HUBNET_API_KEY
@@ -92,13 +98,20 @@ async function processHubnetTransaction(payload) {
   }
 }
 
-// Modify the root route to redirect to your Firebase-hosted frontend
+// Change the root route to return API status instead of serving HTML
 app.get("/", (req, res) => {
-  res.redirect(FRONTEND_URL)
+  res.json({
+    status: "success",
+    message: "QuickConnect API is running",
+    version: "1.0.0"
+  })
 })
 
 app.post("/api/initiate-payment", async (req, res) => {
   const { network, phone, volume, amount, email } = req.body
+  
+  console.log("Received payment request:", { network, phone, volume, amount, email })
+  
   if (!network || !phone || !volume || !amount || !email) {
     return res.status(400).json({ status: "error", message: "Missing required payment data." })
   }
@@ -115,11 +128,15 @@ app.post("/api/initiate-payment", async (req, res) => {
       metadata: { network, phone, volume },
     }
 
+    console.log("Initializing Paystack payment with payload:", payload)
+    
     const data = await initializePaystackPayment(payload)
     if (!data.status || !data.data) {
       throw new Error("Failed to initialize payment: " + (data.message || "Unknown error"))
     }
 
+    console.log("Payment initialized successfully:", data.data.reference)
+    
     return res.json({ status: "success", data: data.data })
   } catch (error) {
     console.error("Error initializing Paystack payment:", error)
@@ -129,12 +146,17 @@ app.post("/api/initiate-payment", async (req, res) => {
 
 app.get("/api/verify-payment/:reference", async (req, res) => {
   const { reference } = req.params
+  
+  console.log("Verifying payment for reference:", reference)
+  
   if (!reference) {
     return res.status(400).json({ status: "error", message: "Missing payment reference." })
   }
 
   try {
     const verifyData = await verifyPaystackPayment(reference)
+    
+    console.log("Paystack verification result:", verifyData.status, verifyData.data?.status)
 
     if (!verifyData.status) {
       return res.json({ status: "pending", message: "Payment not yet completed." })
@@ -148,9 +170,16 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         reference,
         referrer: verifyData.data.metadata.phone,
       }
+      
+      console.log("Processing Hubnet transaction with payload:", hubnetPayload)
+      
       const hubnetData = await processHubnetTransaction(hubnetPayload)
+      
+      console.log("Hubnet transaction result:", hubnetData)
 
       if (hubnetData.status && hubnetData.data && hubnetData.data.code === "0000") {
+        console.log("Transaction completed successfully")
+        
         return res.json({
           status: "success",
           message: "Transaction completed successfully.",
@@ -175,9 +204,21 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
   }
 })
 
+// Add a health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "healthy",
+    timestamp: new Date().toISOString()
+  })
+})
+
 app.use((err, req, res, next) => {
-  console.error(err.stack)
-  res.status(500).send("Something broke!")
+  console.error("Error occurred:", err.stack)
+  res.status(500).json({
+    status: "error",
+    message: "Something went wrong on the server",
+    error: process.env.NODE_ENV === 'production' ? null : err.message
+  })
 })
 
 app.listen(port, () => {
