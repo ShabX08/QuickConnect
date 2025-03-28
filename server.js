@@ -117,9 +117,6 @@ app.post("/api/initiate-payment", async (req, res) => {
       throw new Error("Failed to initialize payment: " + (data.message || "Unknown error"))
     }
 
-    // Add provider information to the response
-    data.data.provider = "paystack"
-
     return res.json({ status: "success", data: data.data })
   } catch (error) {
     console.error("Error initializing Paystack payment:", error)
@@ -129,14 +126,11 @@ app.post("/api/initiate-payment", async (req, res) => {
 
 app.get("/api/verify-payment/:reference", async (req, res) => {
   const { reference } = req.params
-  const provider = req.query.provider || "paystack"
-
   if (!reference) {
     return res.status(400).json({ status: "error", message: "Missing payment reference." })
   }
 
   try {
-    // Verify payment with Paystack
     const verifyData = await verifyPaystackPayment(reference)
 
     if (!verifyData.status) {
@@ -151,56 +145,30 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         reference,
         referrer: verifyData.data.metadata.phone,
       }
+      const hubnetData = await processHubnetTransaction(hubnetPayload)
 
-      try {
-        const hubnetData = await processHubnetTransaction(hubnetPayload)
-
-        if (hubnetData.status && hubnetData.data && hubnetData.data.code === "0000") {
-          return res.json({
-            status: "success",
-            message: "Transaction completed successfully.",
-            data: {
-              reference: verifyData.data.reference,
-              amount: verifyData.data.amount / 100,
-              phone: verifyData.data.metadata.phone,
-              volume: verifyData.data.metadata.volume,
-              timestamp: new Date(verifyData.data.paid_at).getTime(),
-            },
-          })
-        } else {
-          console.error("Hubnet transaction failed:", hubnetData)
-          // Still return success for payment but indicate delivery issue
-          return res.json({
-            status: "success",
-            message: "Payment successful, but data delivery is pending. Our team will process it shortly.",
-            reference: verifyData.data.reference,
-          })
-        }
-      } catch (hubnetError) {
-        console.error("Error processing Hubnet transaction:", hubnetError)
-        // Still return success for payment but indicate delivery issue
+      if (hubnetData.status && hubnetData.data && hubnetData.data.code === "0000") {
         return res.json({
           status: "success",
-          message: "Payment successful, but data delivery is pending. Our team will process it shortly.",
-          reference: verifyData.data.reference,
+          message: "Transaction completed successfully.",
+          data: {
+            reference: verifyData.data.reference,
+            amount: verifyData.data.amount / 100,
+            phone: verifyData.data.metadata.phone,
+            volume: verifyData.data.metadata.volume,
+            timestamp: new Date(verifyData.data.paid_at).getTime(),
+          },
         })
+      } else {
+        console.error("transaction gone!:", hubnetData)
+        return res.json({ status: "error", message: "Failed to process data bundle." })
       }
     } else {
-      // Even if payment failed, return success to maintain pending status on client
-      return res.json({
-        status: "success",
-        message: "Your order has been received and is being processed.",
-        reference: reference,
-      })
+      return res.json({ status: "failed", message: "Payment failed or was cancelled." })
     }
   } catch (error) {
     console.error("Error verifying payment:", error)
-    // Even on error, return success to maintain pending status on client
-    return res.json({
-      status: "success",
-      message: "Your order has been received and is being processed.",
-      reference: reference,
-    })
+    return res.status(500).json({ status: "error", message: "Failed to verify payment. Please try again." })
   }
 })
 
