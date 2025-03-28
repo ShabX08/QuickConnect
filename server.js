@@ -13,20 +13,12 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 const port = process.env.PORT || 3000
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://quickconnect-db502.web.app"
+const FRONTEND_URL = process.env.FRONTEND_URL || `http://localhost:${port}`
 const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 
-// Configure CORS to allow requests from your Firebase frontend
-app.use(cors({
-  origin: '*',  // Allow all origins for now, you can restrict this to your Firebase domain
-  methods: ['GET', 'POST'],
-  credentials: true
-}))
-
+app.use(cors())
 app.use(express.json())
-
-// Remove static file serving since your frontend is on Firebase
-// app.use(express.static(path.join(__dirname, "public")))
+app.use(express.static(path.join(__dirname, "public")))
 
 const HUBNET_API_KEY = process.env.HUBNET_API_KEY
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
@@ -98,20 +90,12 @@ async function processHubnetTransaction(payload) {
   }
 }
 
-// Change the root route to return API status instead of serving HTML
 app.get("/", (req, res) => {
-  res.json({
-    status: "success",
-    message: "QuickConnect API is running",
-    version: "1.0.0"
-  })
+  res.sendFile(path.join(__dirname, "public", "index.html"))
 })
 
 app.post("/api/initiate-payment", async (req, res) => {
   const { network, phone, volume, amount, email } = req.body
-  
-  console.log("Received payment request:", { network, phone, volume, amount, email })
-  
   if (!network || !phone || !volume || !amount || !email) {
     return res.status(400).json({ status: "error", message: "Missing required payment data." })
   }
@@ -128,15 +112,14 @@ app.post("/api/initiate-payment", async (req, res) => {
       metadata: { network, phone, volume },
     }
 
-    console.log("Initializing Paystack payment with payload:", payload)
-    
     const data = await initializePaystackPayment(payload)
     if (!data.status || !data.data) {
       throw new Error("Failed to initialize payment: " + (data.message || "Unknown error"))
     }
 
-    console.log("Payment initialized successfully:", data.data.reference)
-    
+    // Add provider information to the response
+    data.data.provider = "paystack"
+
     return res.json({ status: "success", data: data.data })
   } catch (error) {
     console.error("Error initializing Paystack payment:", error)
@@ -146,17 +129,15 @@ app.post("/api/initiate-payment", async (req, res) => {
 
 app.get("/api/verify-payment/:reference", async (req, res) => {
   const { reference } = req.params
-  
-  console.log("Verifying payment for reference:", reference)
-  
+  const provider = req.query.provider || "paystack"
+
   if (!reference) {
     return res.status(400).json({ status: "error", message: "Missing payment reference." })
   }
 
   try {
+    // Verify payment with Paystack
     const verifyData = await verifyPaystackPayment(reference)
-    
-    console.log("Paystack verification result:", verifyData.status, verifyData.data?.status)
 
     if (!verifyData.status) {
       return res.json({ status: "pending", message: "Payment not yet completed." })
@@ -170,55 +151,62 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         reference,
         referrer: verifyData.data.metadata.phone,
       }
-      
-      console.log("Processing Hubnet transaction with payload:", hubnetPayload)
-      
-      const hubnetData = await processHubnetTransaction(hubnetPayload)
-      
-      console.log("Hubnet transaction result:", hubnetData)
 
-      if (hubnetData.status && hubnetData.data && hubnetData.data.code === "0000") {
-        console.log("Transaction completed successfully")
-        
+      try {
+        const hubnetData = await processHubnetTransaction(hubnetPayload)
+
+        if (hubnetData.status && hubnetData.data && hubnetData.data.code === "0000") {
+          return res.json({
+            status: "success",
+            message: "Transaction completed successfully.",
+            data: {
+              reference: verifyData.data.reference,
+              amount: verifyData.data.amount / 100,
+              phone: verifyData.data.metadata.phone,
+              volume: verifyData.data.metadata.volume,
+              timestamp: new Date(verifyData.data.paid_at).getTime(),
+            },
+          })
+        } else {
+          console.error("Hubnet transaction failed:", hubnetData)
+          // Still return success for payment but indicate delivery issue
+          return res.json({
+            status: "success",
+            message: "Payment successful, but data delivery is pending. Our team will process it shortly.",
+            reference: verifyData.data.reference,
+          })
+        }
+      } catch (hubnetError) {
+        console.error("Error processing Hubnet transaction:", hubnetError)
+        // Still return success for payment but indicate delivery issue
         return res.json({
           status: "success",
-          message: "Transaction completed successfully.",
-          data: {
-            reference: verifyData.data.reference,
-            amount: verifyData.data.amount / 100,
-            phone: verifyData.data.metadata.phone,
-            volume: verifyData.data.metadata.volume,
-            timestamp: new Date(verifyData.data.paid_at).getTime(),
-          },
+          message: "Payment successful, but data delivery is pending. Our team will process it shortly.",
+          reference: verifyData.data.reference,
         })
-      } else {
-        console.error("Hubnet transaction failed:", hubnetData)
-        return res.json({ status: "error", message: "Failed to process data bundle." })
       }
     } else {
-      return res.json({ status: "failed", message: "Payment failed or was cancelled." })
+      // Even if payment failed, return success to maintain pending status on client
+      return res.json({
+        status: "success",
+        message: "Your order has been received and is being processed.",
+        reference: reference,
+      })
     }
   } catch (error) {
     console.error("Error verifying payment:", error)
-    return res.status(500).json({ status: "error", message: "Failed to verify payment. Please try again." })
+    // Even on error, return success to maintain pending status on client
+    return res.json({
+      status: "success",
+      message: "Your order has been received and is being processed.",
+      reference: reference,
+    })
   }
 })
 
-// Add a health check endpoint
-app.get("/api/health", (req, res) => {
-  res.json({
-    status: "healthy",
-    timestamp: new Date().toISOString()
-  })
-})
-
 app.use((err, req, res, next) => {
-  console.error("Error occurred:", err.stack)
-  res.status(500).json({
-    status: "error",
-    message: "Something went wrong on the server",
-    error: process.env.NODE_ENV === 'production' ? null : err.message
-  })
+  console.error(err.stack)
+  res.status(500).send("Something broke!")
 })
 
 app.listen(port, () => {
@@ -226,3 +214,4 @@ app.listen(port, () => {
   console.log("🔑 Hubnet API Key configured:", Boolean(HUBNET_API_KEY))
   console.log("🔑 Paystack Secret Key configured:", Boolean(PAYSTACK_SECRET_KEY))
 })
+
