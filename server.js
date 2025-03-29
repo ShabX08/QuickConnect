@@ -369,10 +369,20 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         } else {
           console.error("Hubnet transaction failed:", hubnetData)
           return res.json({
-            status: "processing",
+            status: "pending",
+            paymentStatus: "success",
+            hubnetStatus: "failed",
             message:
               "Payment successful but data bundle processing is pending. Please contact support if not received within 2 hours.",
             reference: reference,
+            data: {
+              reference: verifyData.data.reference,
+              amount: verifyData.data.amount / 100,
+              phone: verifyData.data.metadata.phone,
+              volume: verifyData.data.metadata.volume,
+              timestamp: new Date(verifyData.data.paid_at).getTime(),
+            },
+            hubnetError: hubnetData,
           })
         }
       } catch (hubnetError) {
@@ -382,29 +392,39 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         // but mark the order status as pending
         return res.json({
           status: "pending",
+          paymentStatus: "success",
+          hubnetStatus: "failed",
           message:
             "Payment successful but data bundle processing is pending. Please contact support if not received within 2 hours.",
           reference: reference,
-          paymentStatus: "success",
-          hubnetStatus: "failed",
+          data: {
+            reference: verifyData.data.reference,
+            amount: verifyData.data.amount / 100,
+            phone: verifyData.data.metadata.phone,
+            volume: verifyData.data.metadata.volume,
+            timestamp: new Date(verifyData.data.paid_at).getTime(),
+          },
           error: hubnetError.message,
         })
       }
     } else if (verifyData.data.status === "pending") {
       return res.json({
         status: "pending",
+        paymentStatus: "pending",
         message: "Payment is still being processed. Please check back later.",
       })
     } else if (verifyData.data.status === "failed") {
       // Return the failed status with the full data for better error handling
       return res.json({
         status: "failed",
+        paymentStatus: "failed",
         message: "Payment failed or was cancelled.",
         data: verifyData.data,
       })
     } else {
       return res.json({
         status: "failed",
+        paymentStatus: "failed",
         message: "Payment failed or was cancelled.",
       })
     }
