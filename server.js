@@ -5,6 +5,7 @@ import dotenv from "dotenv"
 import { fileURLToPath } from "url"
 import path from "path"
 import crypto from "crypto"
+import fs from "fs"
 
 dotenv.config()
 
@@ -18,7 +19,83 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 
 app.use(cors())
 app.use(express.json())
-app.use(express.static(path.join(__dirname, "public")))
+
+// Create public directory if it doesn't exist
+const publicDir = path.join(__dirname, "public")
+if (!fs.existsSync(publicDir)) {
+  fs.mkdirSync(publicDir, { recursive: true })
+}
+
+// Create a basic index.html file if it doesn't exist
+const indexPath = path.join(publicDir, "index.html")
+if (!fs.existsSync(indexPath)) {
+  const basicHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PBM DATA HUB API</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #2563eb;
+    }
+    .endpoint {
+      background-color: #f1f5f9;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .method {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .post {
+      background-color: #10b981;
+      color: white;
+    }
+    .get {
+      background-color: #3b82f6;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>PBM DATA HUB API</h1>
+  <p>Welcome to the PBM DATA HUB API. This server provides endpoints for MTN data bundle services.</p>
+  
+  <h2>Available Endpoints:</h2>
+  
+  <div class="endpoint">
+    <div><span class="method post">POST</span> /api/initiate-payment</div>
+    <p>Initiates a payment transaction with Paystack for data bundle purchase.</p>
+  </div>
+  
+  <div class="endpoint">
+    <div><span class="method get">GET</span> /api/verify-payment/:reference</div>
+    <p>Verifies a payment transaction and processes the data bundle if payment is successful.</p>
+  </div>
+  
+  <p>For more information, please refer to the API documentation or contact support.</p>
+</body>
+</html>
+  `
+  fs.writeFileSync(indexPath, basicHtml)
+}
+
+// Serve static files from the public directory
+app.use(express.static(publicDir))
 
 // Required API keys
 const HUBNET_API_KEY = process.env.HUBNET_API_KEY
@@ -27,7 +104,8 @@ const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
 // Validate required environment variables
 if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY) {
   console.error("Missing required environment variables. Please check your .env file.")
-  process.exit(1)
+  console.error("HUBNET_API_KEY:", Boolean(HUBNET_API_KEY))
+  console.error("PAYSTACK_SECRET_KEY:", Boolean(PAYSTACK_SECRET_KEY))
 }
 
 /**
@@ -147,6 +225,15 @@ async function processHubnetTransaction(payload) {
 // Home route
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"))
+})
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "Server is running",
+    timestamp: new Date().toISOString(),
+  })
 })
 
 /**
@@ -276,6 +363,7 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
               volume: verifyData.data.metadata.volume,
               timestamp: new Date(verifyData.data.paid_at).getTime(),
               transaction_id: hubnetData.transaction_id || hubnetData.data.transaction_id || "N/A",
+              hubnetResponse: hubnetData,
             },
           })
         } else {
