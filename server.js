@@ -113,7 +113,7 @@ if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY) {
  * @returns {string} Unique reference ID
  */
 function generateReference() {
-  return `PBM_DATA_${crypto.randomBytes(8).toString("hex")}`
+  return `MTN_DATA_${crypto.randomBytes(8).toString("hex")}`
 }
 
 /**
@@ -379,11 +379,14 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         console.error("Error processing Hubnet transaction:", hubnetError)
 
         // Even if Hubnet fails, we should acknowledge the payment was successful
+        // but mark the order status as pending
         return res.json({
-          status: "payment_success",
+          status: "pending",
           message:
-            "Payment successful but there was an issue processing your data bundle. Our team will resolve this shortly.",
+            "Payment successful but data bundle processing is pending. Please contact support if not received within 2 hours.",
           reference: reference,
+          paymentStatus: "success",
+          hubnetStatus: "failed",
           error: hubnetError.message,
         })
       }
