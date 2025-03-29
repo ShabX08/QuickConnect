@@ -113,7 +113,7 @@ if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY) {
  * @returns {string} Unique reference ID
  */
 function generateReference() {
-  return `MTN_DATA_${crypto.randomBytes(8).toString("hex")}`
+  return `PBM_DATA_${crypto.randomBytes(8).toString("hex")}`
 }
 
 /**
