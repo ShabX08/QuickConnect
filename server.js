@@ -392,6 +392,13 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         status: "pending",
         message: "Payment is still being processed. Please check back later.",
       })
+    } else if (verifyData.data.status === "failed") {
+      // Return the failed status with the full data for better error handling
+      return res.json({
+        status: "failed",
+        message: "Payment failed or was cancelled.",
+        data: verifyData.data,
+      })
     } else {
       return res.json({
         status: "failed",
