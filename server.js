@@ -17,10 +17,24 @@ const port = process.env.PORT || 3000
 const FRONTEND_URL = process.env.FRONTEND_URL || `http://localhost:${port}`
 const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 
+// Add network-specific configurations
+const NETWORKS = {
+  mtn: {
+    name: "MTN",
+    endpoint: "mtn-new-transaction",
+    description: "MTN Data Bundle",
+  },
+  at: {
+    name: "AirtelTigo",
+    endpoint: "at-new-transaction",
+    description: "AirtelTigo Data Bundle",
+  },
+}
+
 app.use(cors())
 app.use(express.json())
 
-// Create public directory if it doesn't exist
+// Update the index.html file to include both networks
 const publicDir = path.join(__dirname, "public")
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true })
@@ -73,7 +87,7 @@ if (!fs.existsSync(indexPath)) {
 </head>
 <body>
   <h1>PBM DATA HUB API</h1>
-  <p>Welcome to the PBM DATA HUB API. This server provides endpoints for MTN data bundle services.</p>
+  <p>Welcome to the PBM DATA HUB API. This server provides endpoints for MTN and AirtelTigo data bundle services.</p>
   
   <h2>Available Endpoints:</h2>
   
@@ -110,10 +124,12 @@ if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY) {
 
 /**
  * Generate a unique transaction reference
+ * @param {string} network - Network code (mtn, at)
  * @returns {string} Unique reference ID
  */
-function generateReference() {
-  return `MTN_DATA_${crypto.randomBytes(8).toString("hex")}`
+function generateReference(network = "mtn") {
+  const prefix = network.toUpperCase()
+  return `${prefix}_DATA_${crypto.randomBytes(8).toString("hex")}`
 }
 
 /**
@@ -183,24 +199,25 @@ async function verifyPaystackPayment(reference) {
 /**
  * Process Hubnet transaction for data bundle
  * @param {Object} payload - Transaction payload
+ * @param {string} network - Network code (mtn, at)
  * @returns {Promise<Object>} Hubnet response
  */
-async function processHubnetTransaction(payload) {
+async function processHubnetTransaction(payload, network = "mtn") {
   try {
-    console.log("Processing Hubnet transaction with payload:", JSON.stringify(payload))
+    console.log(`Processing Hubnet transaction for ${network} with payload:`, JSON.stringify(payload))
+
+    // Get the correct endpoint for the network
+    const endpoint = NETWORKS[network]?.endpoint || "mtn-new-transaction"
 
     // Using the correct endpoint from the documentation
-    const response = await fetch(
-      "https://console.hubnet.app/live/api/context/business/transaction/mtn-new-transaction",
-      {
-        method: "POST",
-        headers: {
-          token: `Bearer ${HUBNET_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+    const response = await fetch(`https://console.hubnet.app/live/api/context/business/transaction/${endpoint}`, {
+      method: "POST",
+      headers: {
+        token: `Bearer ${HUBNET_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    )
+      body: JSON.stringify(payload),
+    })
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -214,10 +231,10 @@ async function processHubnetTransaction(payload) {
     }
 
     const data = await response.json()
-    console.log("Hubnet transaction result:", data)
+    console.log(`Hubnet transaction result for ${network}:`, data)
     return data
   } catch (error) {
-    console.error("Error processing Hubnet transaction:", error)
+    console.error(`Error processing Hubnet transaction for ${network}:`, error)
     throw error
   }
 }
@@ -251,6 +268,14 @@ app.post("/api/initiate-payment", async (req, res) => {
     })
   }
 
+  // Validate network
+  if (!NETWORKS[network.toLowerCase()]) {
+    return res.status(400).json({
+      status: "error",
+      message: `Invalid network. Supported networks are: ${Object.keys(NETWORKS).join(", ")}`,
+    })
+  }
+
   // Validate phone number format
   if (!/^\d{10}$/.test(phone)) {
     return res.status(400).json({
@@ -261,7 +286,7 @@ app.post("/api/initiate-payment", async (req, res) => {
 
   try {
     // Generate a unique reference for this transaction
-    const reference = generateReference()
+    const reference = generateReference(network)
 
     // Convert amount to kobo (Paystack uses the smallest currency unit)
     const amountInKobo = Math.round(amount * 100)
@@ -281,7 +306,7 @@ app.post("/api/initiate-payment", async (req, res) => {
           {
             display_name: "Data Bundle",
             variable_name: "data_bundle",
-            value: `${volume}MB for ${phone}`,
+            value: `${volume}MB ${NETWORKS[network.toLowerCase()].name} for ${phone}`,
           },
         ],
       },
@@ -339,6 +364,15 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
       // Extract metadata from verified payment
       const { phone, volume, network } = verifyData.data.metadata
 
+      // Validate network
+      const networkCode = network.toLowerCase()
+      if (!NETWORKS[networkCode]) {
+        return res.json({
+          status: "failed",
+          message: `Invalid network: ${network}. Supported networks are: ${Object.keys(NETWORKS).join(", ")}`,
+        })
+      }
+
       // Prepare Hubnet payload according to documentation
       const hubnetPayload = {
         phone,
@@ -349,44 +383,45 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
 
       try {
         // Process data bundle with Hubnet
-        const hubnetData = await processHubnetTransaction(hubnetPayload)
+        const hubnetData = await processHubnetTransaction(hubnetPayload, networkCode)
 
         // Check if Hubnet transaction was successful
         if (hubnetData.status && hubnetData.data && hubnetData.data.code === "0000") {
           return res.json({
             status: "success",
-            message: "Transaction completed successfully. Your data bundle has been processed.",
+            message: `Transaction completed successfully. Your ${NETWORKS[networkCode].name} data bundle has been processed.`,
             data: {
               reference: verifyData.data.reference,
               amount: verifyData.data.amount / 100,
               phone: verifyData.data.metadata.phone,
               volume: verifyData.data.metadata.volume,
+              network: NETWORKS[networkCode].name,
               timestamp: new Date(verifyData.data.paid_at).getTime(),
               transaction_id: hubnetData.transaction_id || hubnetData.data.transaction_id || "N/A",
               hubnetResponse: hubnetData,
             },
           })
         } else {
-          console.error("Hubnet transaction failed:", hubnetData)
+          console.error(`Hubnet transaction failed for ${networkCode}:`, hubnetData)
           return res.json({
             status: "pending",
             paymentStatus: "success",
             hubnetStatus: "failed",
-            message:
-              "Payment successful but data bundle processing is pending. Please contact support if not received within 2 hours.",
+            message: `Payment successful but ${NETWORKS[networkCode].name} data bundle processing is pending. Please contact support if not received within 2 hours.`,
             reference: reference,
             data: {
               reference: verifyData.data.reference,
               amount: verifyData.data.amount / 100,
               phone: verifyData.data.metadata.phone,
               volume: verifyData.data.metadata.volume,
+              network: NETWORKS[networkCode].name,
               timestamp: new Date(verifyData.data.paid_at).getTime(),
             },
             hubnetError: hubnetData,
           })
         }
       } catch (hubnetError) {
-        console.error("Error processing Hubnet transaction:", hubnetError)
+        console.error(`Error processing Hubnet transaction for ${networkCode}:`, hubnetError)
 
         // Even if Hubnet fails, we should acknowledge the payment was successful
         // but mark the order status as pending
@@ -394,14 +429,14 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
           status: "pending",
           paymentStatus: "success",
           hubnetStatus: "failed",
-          message:
-            "Payment successful but data bundle processing is pending. Please contact support if not received within 2 hours.",
+          message: `Payment successful but ${NETWORKS[networkCode].name} data bundle processing is pending. Please contact support if not received within 2 hours.`,
           reference: reference,
           data: {
             reference: verifyData.data.reference,
             amount: verifyData.data.amount / 100,
             phone: verifyData.data.metadata.phone,
             volume: verifyData.data.metadata.volume,
+            network: NETWORKS[networkCode].name,
             timestamp: new Date(verifyData.data.paid_at).getTime(),
           },
           error: hubnetError.message,
@@ -455,4 +490,10 @@ app.listen(port, () => {
   console.log(`🚀 Server running at ${BASE_URL}`)
   console.log("🔑 Hubnet API Key configured:", Boolean(HUBNET_API_KEY))
   console.log("🔑 Paystack Secret Key configured:", Boolean(PAYSTACK_SECRET_KEY))
+  console.log(
+    "📱 Supported networks:",
+    Object.keys(NETWORKS)
+      .map((key) => NETWORKS[key].name)
+      .join(", "),
+  )
 })
