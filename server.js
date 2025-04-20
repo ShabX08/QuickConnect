@@ -222,6 +222,9 @@ async function checkHubnetBalance() {
   }
 }
 
+// Track processed references to prevent duplicates
+const processedReferences = new Set()
+
 /**
  * Process Hubnet transaction for data bundle
  * @param {Object} payload - Transaction payload
@@ -230,6 +233,24 @@ async function checkHubnetBalance() {
  */
 async function processHubnetTransaction(payload, network) {
   try {
+    // Check if this reference has already been processed
+    if (processedReferences.has(payload.reference)) {
+      console.log(`Reference ${payload.reference} has already been processed, skipping Hubnet transaction`)
+      return {
+        status: true,
+        reason: "Already processed",
+        code: "transaction already processed",
+        message: "0000",
+        transaction_id: `TXN-${payload.reference}`,
+        reference: payload.reference,
+        data: {
+          status: true,
+          code: "0000",
+          message: "Order already processed.",
+        },
+      }
+    }
+
     console.log(`Processing Hubnet transaction for ${network} with payload:`, JSON.stringify(payload))
 
     // Using the correct endpoint from the documentation
@@ -258,6 +279,10 @@ async function processHubnetTransaction(payload, network) {
 
     const data = await response.json()
     console.log("Hubnet transaction result:", data)
+
+    // Mark this reference as processed
+    processedReferences.add(payload.reference)
+
     return data
   } catch (error) {
     console.error("Error processing Hubnet transaction:", error)
@@ -384,6 +409,9 @@ app.post("/api/initiate-payment", async (req, res) => {
   }
 })
 
+// Track references that have been verified to prevent duplicate processing
+const verifiedReferences = new Set()
+
 // Update the verify payment endpoint to always process data bundle when payment is successful
 app.get("/api/verify-payment/:reference", async (req, res) => {
   const { reference } = req.params
@@ -392,6 +420,19 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
     return res.status(400).json({
       status: "error",
       message: "Missing payment reference.",
+    })
+  }
+
+  // Check if this reference has already been verified
+  if (verifiedReferences.has(reference)) {
+    console.log(`Reference ${reference} has already been verified, returning cached result`)
+    return res.json({
+      status: "success",
+      message: "Transaction was already processed successfully.",
+      data: {
+        reference: reference,
+        alreadyProcessed: true,
+      },
     })
   }
 
@@ -423,6 +464,9 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         // Process data bundle with Hubnet
         const hubnetData = await processHubnetTransaction(hubnetPayload, network)
 
+        // Mark this reference as verified
+        verifiedReferences.add(reference)
+
         // Always return success for successful payments
         return res.json({
           status: "success",
@@ -442,10 +486,14 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         console.error("Error processing Hubnet transaction:", hubnetError)
 
         // Even if Hubnet fails, we should acknowledge the payment was successful
-        // but mark the order status as completed for the user
+        // but mark the order status as pending for the user
         return res.json({
-          status: "success",
-          message: "Transaction completed successfully. Your data bundle has been processed.",
+          status: "pending",
+          paymentStatus: "success",
+          hubnetStatus: "failed",
+          message:
+            "Your payment was successful, but there was an issue processing your data bundle. Our team will resolve this shortly.",
+          error: hubnetError.message,
           data: {
             reference: verifyData.data.reference,
             amount: verifyData.data.amount / 100,
