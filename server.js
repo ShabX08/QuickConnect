@@ -455,9 +455,9 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
       // Prepare Hubnet payload according to documentation
       const hubnetPayload = {
         phone,
-        volume: volume.toString(),
+        volume: volume.toString(), // Ensure volume is a string as required by API
         reference,
-        referrer: phone, // Using customer's phone as referrer
+        referrer: phone, // Using customer's phone as referrer to receive completion alerts
       }
 
       try {
@@ -478,7 +478,7 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
             volume: verifyData.data.metadata.volume,
             network: verifyData.data.metadata.network,
             timestamp: new Date(verifyData.data.paid_at).getTime(),
-            transaction_id: hubnetData.transaction_id || hubnetData.data.transaction_id || "N/A",
+            transaction_id: hubnetData.transaction_id || hubnetData.data?.transaction_id || "N/A",
             hubnetResponse: hubnetData,
           },
         })
