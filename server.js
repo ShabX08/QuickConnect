@@ -113,6 +113,36 @@ if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY) {
   console.error("PAYSTACK_SECRET_KEY:", Boolean(PAYSTACK_SECRET_KEY))
 }
 
+// Create a log directory if it doesn't exist
+const logDir = path.join(__dirname, "logs")
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true })
+}
+
+/**
+ * Log transactions for debugging and auditing
+ * @param {string} type - Type of log entry
+ * @param {Object} data - Data to log
+ */
+function logTransaction(type, data) {
+  try {
+    const timestamp = new Date().toISOString()
+    const logEntry = {
+      timestamp,
+      type,
+      data
+    }
+    
+    console.log(`[${timestamp}] [${type}]`, JSON.stringify(data))
+    
+    // Save logs to a file
+    const logFile = path.join(logDir, `${new Date().toISOString().split('T')[0]}-transactions.log`)
+    fs.appendFileSync(logFile, JSON.stringify(logEntry) + '\n')
+  } catch (error) {
+    console.error("Error logging transaction:", error)
+  }
+}
+
 /**
  * Generate a unique transaction reference
  * @param {string} prefix - Prefix for the reference (e.g., MTN_DATA, AT_DATA)
@@ -129,7 +159,7 @@ function generateReference(prefix = "DATA") {
  */
 async function initializePaystackPayment(payload) {
   try {
-    console.log("Initializing Paystack payment with payload:", JSON.stringify(payload))
+    logTransaction("PAYSTACK_INIT_REQUEST", payload)
 
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -140,17 +170,17 @@ async function initializePaystackPayment(payload) {
       body: JSON.stringify(payload),
     })
 
+    const data = await response.json()
+    
+    logTransaction("PAYSTACK_INIT_RESPONSE", data)
+    
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Paystack error response:", errorData)
-      throw new Error(`Paystack error: ${errorData.message || response.statusText}`)
+      throw new Error(`Paystack error: ${data.message || response.statusText}`)
     }
 
-    const data = await response.json()
-    console.log("Paystack initialization successful:", data)
     return data
   } catch (error) {
-    console.error("Error initializing Paystack payment:", error)
+    logTransaction("PAYSTACK_INIT_ERROR", { error: error.message })
     throw error
   }
 }
@@ -162,7 +192,7 @@ async function initializePaystackPayment(payload) {
  */
 async function verifyPaystackPayment(reference) {
   try {
-    console.log(`Verifying Paystack payment with reference: ${reference}`)
+    logTransaction("PAYSTACK_VERIFY_REQUEST", { reference })
 
     const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
       headers: {
@@ -171,17 +201,17 @@ async function verifyPaystackPayment(reference) {
       },
     })
 
+    const data = await response.json()
+    
+    logTransaction("PAYSTACK_VERIFY_RESPONSE", data)
+    
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Paystack verification error:", errorData)
-      throw new Error(`Paystack verification error: ${errorData.message || response.statusText}`)
+      throw new Error(`Paystack verification error: ${data.message || response.statusText}`)
     }
 
-    const data = await response.json()
-    console.log("Paystack verification result:", data)
     return data
   } catch (error) {
-    console.error("Error verifying Paystack payment:", error)
+    logTransaction("PAYSTACK_VERIFY_ERROR", { reference, error: error.message })
     throw error
   }
 }
@@ -192,7 +222,7 @@ async function verifyPaystackPayment(reference) {
  */
 async function checkHubnetBalance() {
   try {
-    console.log("Checking Hubnet account balance")
+    logTransaction("HUBNET_BALANCE_REQUEST", {})
 
     const response = await fetch("https://console.hubnet.app/live/api/context/business/transaction/check_balance", {
       method: "GET",
@@ -202,28 +232,110 @@ async function checkHubnetBalance() {
       },
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("Hubnet balance check error response:", errorText)
-      try {
-        const errorData = JSON.parse(errorText)
-        throw new Error(`Hubnet balance check error: ${errorData.message || errorData.reason || response.statusText}`)
-      } catch (e) {
-        throw new Error(`Hubnet balance check error: ${response.statusText}. Status code: ${response.status}`)
-      }
+    // Get response as text first to handle potential JSON parsing errors
+    const responseText = await response.text()
+    let data
+    
+    try {
+      data = JSON.parse(responseText)
+      logTransaction("HUBNET_BALANCE_RESPONSE", data)
+    } catch (e) {
+      logTransaction("HUBNET_BALANCE_PARSE_ERROR", { responseText, error: e.message })
+      throw new Error(`Invalid response from Hubnet API: ${responseText}`)
     }
 
-    const data = await response.json()
-    console.log("Hubnet balance check result:", data)
+    if (!response.ok) {
+      throw new Error(`Hubnet balance check error: ${data.message || data.reason || response.statusText}`)
+    }
+
     return data
   } catch (error) {
-    console.error("Error checking Hubnet balance:", error)
+    logTransaction("HUBNET_BALANCE_ERROR", { error: error.message })
     throw error
   }
 }
 
-// Track processed references to prevent duplicates
+// Database of processed references to prevent duplicates
+// In a production environment, this should be replaced with a persistent database
 const processedReferences = new Set()
+
+/**
+ * Validate Hubnet payload
+ * @param {Object} payload - Payload to validate
+ * @returns {Array|null} Array of errors or null if valid
+ */
+function validateHubnetPayload(payload) {
+  const errors = []
+  
+  // Validate phone number (must be 10 digits)
+  if (!payload.phone || !/^\d{10}$/.test(payload.phone)) {
+    errors.push("Invalid phone number format. Must be 10 digits.")
+  }
+  
+  // Validate volume (must be a number or string number)
+  const volumeNum = Number(payload.volume)
+  if (isNaN(volumeNum) || volumeNum <= 0) {
+    errors.push("Invalid volume. Must be a positive number.")
+  }
+  
+  // Validate reference (must be 6-25 characters)
+  if (!payload.reference || payload.reference.length < 6 || payload.reference.length > 25) {
+    errors.push("Invalid reference. Must be between 6 and 25 characters.")
+  }
+  
+  return errors.length > 0 ? errors : null
+}
+
+/**
+ * Process Hubnet transaction for data bundle with retry mechanism
+ * @param {Object} payload - Transaction payload
+ * @param {string} network - Network code (mtn, at, big-time)
+ * @param {number} maxRetries - Maximum number of retry attempts
+ * @returns {Promise<Object>} Hubnet response
+ */
+async function processHubnetTransactionWithRetry(payload, network, maxRetries = 3) {
+  let lastError
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // If this is a retry attempt, log it
+      if (attempt > 1) {
+        logTransaction("HUBNET_RETRY", { 
+          attempt, 
+          maxRetries, 
+          reference: payload.reference,
+          network
+        })
+      }
+      
+      return await processHubnetTransaction(payload, network)
+    } catch (error) {
+      lastError = error
+      
+      logTransaction("HUBNET_ATTEMPT_FAILED", { 
+        attempt, 
+        error: error.message,
+        reference: payload.reference,
+        network
+      })
+      
+      // Don't retry for validation errors
+      if (error.message.includes("Invalid network") || 
+          error.message.includes("Invalid volume") ||
+          error.message.includes("Invalid phone")) {
+        break
+      }
+      
+      // Wait before retrying (exponential backoff)
+      if (attempt < maxRetries) {
+        const delay = 1000 * Math.pow(2, attempt - 1) // 1s, 2s, 4s, etc.
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+  }
+  
+  throw lastError || new Error("Failed to process Hubnet transaction after multiple attempts")
+}
 
 /**
  * Process Hubnet transaction for data bundle
@@ -235,7 +347,7 @@ async function processHubnetTransaction(payload, network) {
   try {
     // Check if this reference has already been processed
     if (processedReferences.has(payload.reference)) {
-      console.log(`Reference ${payload.reference} has already been processed, skipping Hubnet transaction`)
+      logTransaction("HUBNET_ALREADY_PROCESSED", { reference: payload.reference })
       return {
         status: true,
         reason: "Already processed",
@@ -251,9 +363,25 @@ async function processHubnetTransaction(payload, network) {
       }
     }
 
-    console.log(`Processing Hubnet transaction for ${network} with payload:`, JSON.stringify(payload))
+    // Validate payload
+    const validationErrors = validateHubnetPayload(payload)
+    if (validationErrors) {
+      logTransaction("HUBNET_VALIDATION_ERROR", { payload, errors: validationErrors })
+      throw new Error(`Validation errors: ${validationErrors.join(", ")}`)
+    }
 
-    // Using the correct endpoint from the documentation
+    // Ensure volume is a string as required by API
+    if (typeof payload.volume !== 'string') {
+      payload.volume = payload.volume.toString()
+    }
+
+    // Add webhook URL for transaction status updates if not present
+    if (!payload.webhook) {
+      payload.webhook = `${BASE_URL}/api/webhooks/hubnet-callback`
+    }
+
+    logTransaction("HUBNET_TRANSACTION_REQUEST", { payload, network })
+
     const response = await fetch(
       `https://console.hubnet.app/live/api/context/business/transaction/${network}-new-transaction`,
       {
@@ -263,29 +391,48 @@ async function processHubnetTransaction(payload, network) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-      },
+      }
     )
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("Hubnet API error response:", errorText)
-      try {
-        const errorData = JSON.parse(errorText)
-        throw new Error(`Hubnet API error: ${errorData.message || errorData.reason || response.statusText}`)
-      } catch (e) {
-        throw new Error(`Hubnet API error: ${response.statusText}. Status code: ${response.status}`)
+    // Get response as text first to handle potential JSON parsing errors
+    const responseText = await response.text()
+    let data
+    
+    try {
+      data = JSON.parse(responseText)
+      logTransaction("HUBNET_TRANSACTION_RESPONSE", data)
+    } catch (e) {
+      logTransaction("HUBNET_PARSE_ERROR", { responseText, error: e.message })
+      throw new Error(`Invalid response from Hubnet API: ${responseText}`)
+    }
+
+    // Check for specific error codes from Hubnet API
+    if (!data.status) {
+      const errorCode = data.code || 'unknown'
+      const errorMessage = data.message || 'Unknown error'
+      
+      logTransaction("HUBNET_ERROR", { errorCode, errorMessage, data })
+      
+      if (errorCode === '1001') {
+        throw new Error(`Invalid network: ${network}`)
+      } else if (errorCode === '1002') {
+        throw new Error(`Invalid volume: ${payload.volume}`)
+      } else {
+        throw new Error(`Hubnet API error: ${errorMessage}`)
       }
     }
 
-    const data = await response.json()
-    console.log("Hubnet transaction result:", data)
-
-    // Mark this reference as processed
-    processedReferences.add(payload.reference)
-
-    return data
+    // Validate successful response
+    if (data.status && data.code === '0000') {
+      // Mark this reference as processed
+      processedReferences.add(payload.reference)
+      return data
+    } else {
+      logTransaction("HUBNET_UNEXPECTED_RESPONSE", data)
+      throw new Error(`Unexpected response from Hubnet: ${data.message || JSON.stringify(data)}`)
+    }
   } catch (error) {
-    console.error("Error processing Hubnet transaction:", error)
+    logTransaction("HUBNET_TRANSACTION_ERROR", { error: error.message, payload, network })
     throw error
   }
 }
@@ -305,6 +452,30 @@ app.get("/health", (req, res) => {
 })
 
 /**
+ * Hubnet API health check endpoint
+ * Checks if the Hubnet API is responding correctly
+ */
+app.get("/api/hubnet-health", async (req, res) => {
+  try {
+    const balanceData = await checkHubnetBalance()
+    
+    return res.json({
+      status: "healthy",
+      message: "Hubnet API is responding correctly",
+      balance: balanceData.balance || "N/A",
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    return res.status(503).json({
+      status: "unhealthy",
+      message: "Hubnet API is not responding correctly",
+      error: error.message,
+      timestamp: new Date().toISOString()
+    })
+  }
+})
+
+/**
  * Check balance endpoint
  * Returns the current balance for the service provider account
  */
@@ -318,7 +489,7 @@ app.get("/api/check-balance", async (req, res) => {
       data: balanceData,
     })
   } catch (error) {
-    console.error("Error in /api/check-balance:", error)
+    logTransaction("BALANCE_CHECK_ERROR", { error: error.message })
     return res.status(500).json({
       status: "error",
       message: "Failed to retrieve balance. Please try again or contact support.",
@@ -400,7 +571,7 @@ app.post("/api/initiate-payment", async (req, res) => {
       data: data.data,
     })
   } catch (error) {
-    console.error("Error in /api/initiate-payment:", error)
+    logTransaction("PAYMENT_INIT_ERROR", { error: error.message, request: req.body })
     return res.status(500).json({
       status: "error",
       message: "Failed to initialize payment. Please try again or contact support.",
@@ -412,7 +583,10 @@ app.post("/api/initiate-payment", async (req, res) => {
 // Track references that have been verified to prevent duplicate processing
 const verifiedReferences = new Set()
 
-// Update the verify payment endpoint to always process data bundle when payment is successful
+/**
+ * Verify payment endpoint
+ * Verifies payment and processes data bundle when payment is successful
+ */
 app.get("/api/verify-payment/:reference", async (req, res) => {
   const { reference } = req.params
 
@@ -425,7 +599,7 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
 
   // Check if this reference has already been verified
   if (verifiedReferences.has(reference)) {
-    console.log(`Reference ${reference} has already been verified, returning cached result`)
+    logTransaction("PAYMENT_ALREADY_VERIFIED", { reference })
     return res.json({
       status: "success",
       message: "Transaction was already processed successfully.",
@@ -458,16 +632,17 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         volume: volume.toString(), // Ensure volume is a string as required by API
         reference,
         referrer: phone, // Using customer's phone as referrer to receive completion alerts
+        webhook: `${BASE_URL}/api/webhooks/hubnet-callback` // Add webhook for status updates
       }
 
       try {
-        // Process data bundle with Hubnet
-        const hubnetData = await processHubnetTransaction(hubnetPayload, network)
+        // Process data bundle with Hubnet using retry mechanism
+        const hubnetData = await processHubnetTransactionWithRetry(hubnetPayload, network)
 
         // Mark this reference as verified
         verifiedReferences.add(reference)
 
-        // Always return success for successful payments
+        // Return success response
         return res.json({
           status: "success",
           message: "Transaction completed successfully. Your data bundle has been processed.",
@@ -483,7 +658,16 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
           },
         })
       } catch (hubnetError) {
-        console.error("Error processing Hubnet transaction:", hubnetError)
+        logTransaction("HUBNET_ERROR_AFTER_PAYMENT", { 
+          reference, 
+          error: hubnetError.message,
+          paymentData: {
+            amount: verifyData.data.amount / 100,
+            phone: verifyData.data.metadata.phone,
+            volume: verifyData.data.metadata.volume,
+            network: verifyData.data.metadata.network,
+          }
+        })
 
         // Even if Hubnet fails, we should acknowledge the payment was successful
         // but mark the order status as pending for the user
@@ -526,7 +710,7 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
       })
     }
   } catch (error) {
-    console.error("Error verifying payment:", error)
+    logTransaction("PAYMENT_VERIFICATION_ERROR", { reference, error: error.message })
     return res.status(500).json({
       status: "error",
       message: "Failed to verify payment. Please try again or contact support.",
@@ -536,10 +720,39 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
 })
 
 /**
+ * Webhook endpoint for Hubnet callbacks
+ * Receives transaction status updates from Hubnet
+ */
+app.post("/api/webhooks/hubnet-callback", express.json(), async (req, res) => {
+  try {
+    logTransaction("HUBNET_WEBHOOK", req.body)
+    
+    const { reference, status, transaction_id } = req.body
+    
+    if (!reference) {
+      return res.status(400).json({ status: "error", message: "Missing reference" })
+    }
+    
+    // Here you would update your database with the transaction status
+    // For example, using Firebase or another database
+    
+    // Always respond with 200 OK to acknowledge receipt
+    return res.status(200).json({ 
+      status: "success", 
+      message: "Webhook received",
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    logTransaction("HUBNET_WEBHOOK_ERROR", { error: error.message, body: req.body })
+    return res.status(500).json({ status: "error", message: "Internal server error" })
+  }
+})
+
+/**
  * Global error handler
  */
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err.stack)
+  logTransaction("UNHANDLED_ERROR", { error: err.stack, path: req.path, method: req.method })
   res.status(500).json({
     status: "error",
     message: "An unexpected error occurred. Please try again or contact support.",
