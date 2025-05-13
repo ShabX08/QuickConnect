@@ -1,5 +1,4 @@
 import express from "express"
-import cors from "cors"
 import fetch from "node-fetch"
 import dotenv from "dotenv"
 import { fileURLToPath } from "url"
@@ -17,86 +16,13 @@ const port = process.env.PORT || 3000
 const FRONTEND_URL = process.env.FRONTEND_URL || `http://localhost:${port}`
 const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 
-app.use(cors())
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
 // Create public directory if it doesn't exist
 const publicDir = path.join(__dirname, "public")
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true })
-}
-
-// Create a basic index.html file if it doesn't exist
-const indexPath = path.join(publicDir, "index.html")
-if (!fs.existsSync(indexPath)) {
-  const basicHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PBM DATA HUB API</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    h1 {
-      color: #2563eb;
-    }
-    .endpoint {
-      background-color: #f1f5f9;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
-    }
-    .method {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-weight: bold;
-      margin-right: 10px;
-    }
-    .post {
-      background-color: #10b981;
-      color: white;
-    }
-    .get {
-      background-color: #3b82f6;
-      color: white;
-    }
-  </style>
-</head>
-<body>
-  <h1>PBM DATA HUB API</h1>
-  <p>Welcome to the PBM DATA HUB API. This server provides endpoints for MTN and Airtel Tigo data bundle services.</p>
-  
-  <h2>Available Endpoints:</h2>
-  
-  <div class="endpoint">
-    <div><span class="method post">POST</span> /api/initiate-payment</div>
-    <p>Initiates a payment transaction with Paystack for data bundle purchase.</p>
-  </div>
-  
-  <div class="endpoint">
-    <div><span class="method get">GET</span> /api/verify-payment/:reference</div>
-    <p>Verifies a payment transaction and processes the data bundle if payment is successful.</p>
-  </div>
-  
-  <div class="endpoint">
-    <div><span class="method get">GET</span> /api/check-balance</div>
-    <p>Checks the current balance for the service provider account.</p>
-  </div>
-  
-  <p>For more information, please refer to the API documentation or contact support.</p>
-</body>
-</html>
-  `
-  fs.writeFileSync(indexPath, basicHtml)
 }
 
 // Serve static files from the public directory
@@ -112,6 +38,89 @@ if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY) {
   console.error("HUBNET_API_KEY:", Boolean(HUBNET_API_KEY))
   console.error("PAYSTACK_SECRET_KEY:", Boolean(PAYSTACK_SECRET_KEY))
 }
+
+// Create a persistent store for processed references
+class TransactionStore {
+  constructor() {
+    this._store = new Map()
+    this._filePath = path.join(__dirname, "processed_transactions.json")
+    this.init()
+  }
+
+  init() {
+    try {
+      if (fs.existsSync(this._filePath)) {
+        const data = JSON.parse(fs.readFileSync(this._filePath, "utf8"))
+        // Convert the loaded array back to a Map
+        this._store = new Map(Object.entries(data))
+        console.log(`Loaded ${this._store.size} processed transactions from disk`)
+      }
+    } catch (error) {
+      console.error("Error loading transaction store:", error)
+      // Continue with empty store if file can't be loaded
+    }
+    return this
+  }
+
+  save() {
+    try {
+      // Convert Map to object for JSON serialization
+      const data = Object.fromEntries(this._store)
+      fs.writeFileSync(this._filePath, JSON.stringify(data, null, 2))
+    } catch (error) {
+      console.error("Error saving transaction store:", error)
+    }
+  }
+
+  has(reference) {
+    return this._store.has(reference)
+  }
+
+  add(reference, metadata = {}) {
+    this._store.set(reference, {
+      timestamp: Date.now(),
+      ...metadata,
+    })
+
+    // Save to disk after each addition for durability
+    this.save()
+    return this
+  }
+
+  get(reference) {
+    return this._store.get(reference)
+  }
+
+  getAll() {
+    return Array.from(this._store.entries()).map(([reference, metadata]) => ({
+      reference,
+      ...metadata,
+    }))
+  }
+
+  cleanup(maxAgeMs = 30 * 24 * 60 * 60 * 1000) {
+    // Default: 30 days
+    const now = Date.now()
+    let count = 0
+
+    for (const [reference, metadata] of this._store.entries()) {
+      if (now - metadata.timestamp > maxAgeMs) {
+        this._store.delete(reference)
+        count++
+      }
+    }
+
+    if (count > 0) {
+      console.log(`Cleaned up ${count} old transaction records`)
+      this.save()
+    }
+
+    return count
+  }
+}
+
+// Initialize the transaction store
+const processedTransactions = new TransactionStore()
 
 /**
  * Generate a unique transaction reference
@@ -202,115 +211,34 @@ async function checkHubnetBalance() {
       },
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("Hubnet balance check error response:", errorText)
-      try {
-        const errorData = JSON.parse(errorText)
-        throw new Error(`Hubnet balance check error: ${errorData.message || errorData.reason || response.statusText}`)
-      } catch (e) {
-        throw new Error(`Hubnet balance check error: ${response.statusText}. Status code: ${response.status}`)
-      }
+    // Log the raw response for debugging
+    console.log(`Hubnet balance check response status: ${response.status}`)
+    
+    // Get the response as text first
+    const responseText = await response.text()
+    console.log(`Hubnet balance check raw response:`, responseText)
+
+    // Try to parse the response as JSON
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch (e) {
+      console.error("Error parsing Hubnet balance response:", e)
+      throw new Error(`Hubnet balance check returned invalid JSON. Status code: ${response.status}, Response: ${responseText}`)
     }
 
-    const data = await response.json()
-    console.log("Hubnet balance check result:", data)
+    if (!response.ok) {
+      console.error("Hubnet balance check error response:", data)
+      const errorMessage = data.message || data.reason || response.statusText
+      throw new Error(`Hubnet balance check error: ${errorMessage}. Status code: ${response.status}`)
+    }
+
     return data
   } catch (error) {
     console.error("Error checking Hubnet balance:", error)
     throw error
   }
 }
-
-// Create a persistent store for processed references
-// This will be more reliable than an in-memory Set
-const TransactionStore = {
-  // Store for processed references with timestamps
-  _store: new Map(),
-  
-  // File path for persistence
-  _filePath: path.join(__dirname, 'processed_transactions.json'),
-  
-  // Initialize the store from disk
-  init() {
-    try {
-      if (fs.existsSync(this._filePath)) {
-        const data = JSON.parse(fs.readFileSync(this._filePath, 'utf8'));
-        // Convert the loaded array back to a Map
-        this._store = new Map(Object.entries(data));
-        console.log(`Loaded ${this._store.size} processed transactions from disk`);
-      }
-    } catch (error) {
-      console.error('Error loading transaction store:', error);
-      // Continue with empty store if file can't be loaded
-    }
-    return this;
-  },
-  
-  // Save the store to disk
-  save() {
-    try {
-      // Convert Map to object for JSON serialization
-      const data = Object.fromEntries(this._store);
-      fs.writeFileSync(this._filePath, JSON.stringify(data, null, 2));
-    } catch (error) {
-      console.error('Error saving transaction store:', error);
-    }
-  },
-  
-  // Check if a reference has been processed
-  has(reference) {
-    return this._store.has(reference);
-  },
-  
-  // Mark a reference as processed
-  add(reference, metadata = {}) {
-    this._store.set(reference, {
-      timestamp: Date.now(),
-      ...metadata
-    });
-    
-    // Save to disk after each addition for durability
-    this.save();
-    return this;
-  },
-  
-  // Get metadata for a processed reference
-  get(reference) {
-    return this._store.get(reference);
-  },
-  
-  // Get all processed references
-  getAll() {
-    return Array.from(this._store.entries()).map(([reference, metadata]) => ({
-      reference,
-      ...metadata
-    }));
-  },
-  
-  // Clean up old entries (optional, for maintenance)
-  cleanup(maxAgeMs = 30 * 24 * 60 * 60 * 1000) { // Default: 30 days
-    const now = Date.now();
-    let count = 0;
-    
-    for (const [reference, metadata] of this._store.entries()) {
-      if (now - metadata.timestamp > maxAgeMs) {
-        this._store.delete(reference);
-        count++;
-      }
-    }
-    
-    if (count > 0) {
-      console.log(`Cleaned up ${count} old transaction records`);
-      this.save();
-    }
-    
-    return count;
-  }
-};
-
-// Initialize the transaction store
-const processedTransactions = TransactionStore.init();
 
 /**
  * Process Hubnet transaction for data bundle
@@ -320,17 +248,17 @@ const processedTransactions = TransactionStore.init();
  */
 async function processHubnetTransaction(payload, network) {
   try {
-    // Check if this reference has already been processed using our persistent store
+    // Check if this reference has already been processed
     if (processedTransactions.has(payload.reference)) {
-      console.log(`Reference ${payload.reference} has already been processed, skipping Hubnet transaction`);
-      const metadata = processedTransactions.get(payload.reference);
-      
+      console.log(`Reference ${payload.reference} has already been processed, skipping Hubnet transaction`)
+      const metadata = processedTransactions.get(payload.reference)
+
       // Return the cached response if available
       if (metadata && metadata.hubnetResponse) {
-        console.log(`Returning cached Hubnet response for ${payload.reference}`);
-        return metadata.hubnetResponse;
+        console.log(`Returning cached Hubnet response for ${payload.reference}`)
+        return metadata.hubnetResponse
       }
-      
+
       // Otherwise return a generic success response
       return {
         status: true,
@@ -344,37 +272,74 @@ async function processHubnetTransaction(payload, network) {
           code: "0000",
           message: "Order already processed.",
         },
-      };
+      }
     }
 
-    console.log(`Processing Hubnet transaction for ${network} with payload:`, JSON.stringify(payload));
+    // First check Hubnet balance to avoid failed transactions
+    try {
+      const balanceData = await checkHubnetBalance()
+      if (!balanceData.status || balanceData.balance < 5) {
+        console.log("Hubnet balance is insufficient:", balanceData)
+        throw new Error("INSUFFICIENT_HUBNET_BALANCE")
+      }
+    } catch (balanceError) {
+      console.error("Error checking Hubnet balance:", balanceError)
+      if (balanceError.message === "INSUFFICIENT_HUBNET_BALANCE") {
+        throw balanceError
+      }
+      // If it's just a balance check error, continue with the transaction attempt
+    }
+
+    console.log(`Processing Hubnet transaction for ${network} with payload:`, JSON.stringify(payload))
 
     // Using the correct endpoint from the documentation
-    const response = await fetch(
-      `https://console.hubnet.app/live/api/context/business/transaction/${network}-new-transaction`,
-      {
-        method: "POST",
-        headers: {
-          token: `Bearer ${HUBNET_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
+    const apiUrl = `https://console.hubnet.app/live/api/context/business/transaction/${network}-new-transaction`
+    console.log(`Sending request to: ${apiUrl}`)
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Hubnet API error response:", errorText);
-      try {
-        const errorData = JSON.parse(errorText);
-        throw new Error(`Hubnet API error: ${errorData.message || errorData.reason || response.statusText}`);
-      } catch (e) {
-        throw new Error(`Hubnet API error: ${response.statusText}. Status code: ${response.status}`);
-      }
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        token: `Bearer ${HUBNET_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    // Log the raw response for debugging
+    console.log(`Hubnet API response status: ${response.status}`)
+    
+    // Get the response as text first
+    const responseText = await response.text()
+    console.log(`Hubnet API raw response:`, responseText)
+
+    // Try to parse the response as JSON
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch (e) {
+      console.error("Error parsing Hubnet response:", e)
+      throw new Error(`Hubnet API returned invalid JSON. Status code: ${response.status}, Response: ${responseText}`)
     }
 
-    const data = await response.json();
-    console.log("Hubnet transaction result:", data);
+    // Check for insufficient balance error
+    if (
+      data.event === "charge.rejected" &&
+      data.status === "failed" &&
+      data.message &&
+      data.message.includes("insufficient")
+    ) {
+      console.error("Hubnet account has insufficient balance:", data)
+      throw new Error("INSUFFICIENT_HUBNET_BALANCE")
+    }
+
+    // Check for other errors
+    if (!response.ok || data.status === "failed") {
+      console.error("Hubnet API error response:", data)
+      const errorMessage = data.message || data.reason || response.statusText
+      throw new Error(`Hubnet API error: ${errorMessage}. Status code: ${response.status}`)
+    }
+
+    console.log("Hubnet transaction result:", data)
 
     // Mark this reference as processed with the response data for future reference
     processedTransactions.add(payload.reference, {
@@ -382,22 +347,22 @@ async function processHubnetTransaction(payload, network) {
       phone: payload.phone,
       volume: payload.volume,
       hubnetResponse: data,
-      processedAt: new Date().toISOString()
-    });
+      processedAt: new Date().toISOString(),
+    })
 
-    return data;
+    return data
   } catch (error) {
-    console.error("Error processing Hubnet transaction:", error);
-    
+    console.error("Error processing Hubnet transaction:", error)
+
     // Important: We don't mark the transaction as processed if there was an error
     // This allows for retry attempts
-    throw error;
+    throw error
   }
 }
 
 // Home route
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"))
+  res.send("Hubnet API Server is running")
 })
 
 // Health check endpoint
@@ -434,38 +399,54 @@ app.get("/api/check-balance", async (req, res) => {
 
 /**
  * Initiate payment endpoint
- * Starts the payment process with Paystack
+ * Starts the payment process with Paystack for data bundle purchase or wallet deposit
  */
 app.post("/api/initiate-payment", async (req, res) => {
-  const { network, phone, volume, amount, email, fcmToken } = req.body
+  const { network, phone, volume, amount, email, fcmToken, paymentType } = req.body
 
-  // Validate required fields
-  if (!network || !phone || !volume || !amount || !email) {
-    return res.status(400).json({
-      status: "error",
-      message: "Missing required payment data. Please provide network, phone, volume, amount, and email.",
-    })
-  }
+  // Validate required fields based on payment type
+  if (paymentType === "wallet") {
+    // For wallet deposits, we only need amount and email
+    if (!amount || !email) {
+      return res.status(400).json({
+        status: "error",
+        message: "Missing required payment data. Please provide amount and email.",
+      })
+    }
+  } else {
+    // For data bundle purchases, we need network, phone, volume, amount, and email
+    if (!network || !phone || !volume || !amount || !email) {
+      return res.status(400).json({
+        status: "error",
+        message: "Missing required payment data. Please provide network, phone, volume, amount, and email.",
+      })
+    }
 
-  // Validate network
-  if (!["mtn", "at", "big-time"].includes(network)) {
-    return res.status(400).json({
-      status: "error",
-      message: "Invalid network. Supported networks are: mtn, at, big-time",
-    })
-  }
+    // Validate network
+    if (!["mtn", "at", "big-time"].includes(network)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid network. Supported networks are: mtn, at, big-time",
+      })
+    }
 
-  // Validate phone number format
-  if (!/^\d{10}$/.test(phone)) {
-    return res.status(400).json({
-      status: "error",
-      message: "Invalid phone number format. Please provide a 10-digit phone number.",
-    })
+    // Validate phone number format
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid phone number format. Please provide a 10-digit phone number.",
+      })
+    }
   }
 
   try {
     // Generate a unique reference for this transaction
-    const prefix = network === "mtn" ? "PBM_DATA" : network === "at" ? "AT_DATA" : "BT_DATA"
+    let prefix = "PAYMENT"
+    if (paymentType === "wallet") {
+      prefix = "WALLET_DEPOSIT"
+    } else {
+      prefix = network === "mtn" ? "MTN_DATA" : network === "at" ? "AT_DATA" : "BT_DATA"
+    }
     const reference = generateReference(prefix)
 
     // Convert amount to kobo (Paystack uses the smallest currency unit)
@@ -478,18 +459,26 @@ app.post("/api/initiate-payment", async (req, res) => {
       reference,
       callback_url: `${FRONTEND_URL}`,
       metadata: {
-        network,
-        phone,
-        volume,
+        paymentType: paymentType || "bundle",
         fcmToken: fcmToken || null,
         custom_fields: [
           {
-            display_name: "Data Bundle",
-            variable_name: "data_bundle",
-            value: `${volume}MB for ${phone} (${network.toUpperCase()})`,
+            display_name: paymentType === "wallet" ? "Wallet Deposit" : "Data Bundle",
+            variable_name: paymentType === "wallet" ? "wallet_deposit" : "data_bundle",
+            value:
+              paymentType === "wallet"
+                ? `₵${amount} Wallet Deposit`
+                : `${volume}MB for ${phone} (${network.toUpperCase()})`,
           },
         ],
       },
+    }
+
+    // Add network, phone, and volume to metadata if this is a data bundle purchase
+    if (paymentType !== "wallet") {
+      payload.metadata.network = network
+      payload.metadata.phone = phone
+      payload.metadata.volume = volume
     }
 
     // Initialize payment with Paystack
@@ -515,24 +504,116 @@ app.post("/api/initiate-payment", async (req, res) => {
 })
 
 /**
+ * Process wallet purchase endpoint
+ * Processes a data bundle purchase using wallet balance
+ */
+app.post("/api/process-wallet-purchase", async (req, res) => {
+  const { userId, network, phone, volume, amount, email, fcmToken } = req.body
+
+  // Validate required fields
+  if (!userId || !network || !phone || !volume || !amount || !email) {
+    return res.status(400).json({
+      status: "error",
+      message: "Missing required data. Please provide userId, network, phone, volume, amount, and email.",
+    })
+  }
+
+  // Validate network
+  if (!["mtn", "at", "big-time"].includes(network)) {
+    return res.status(400).json({
+      status: "error",
+      message: "Invalid network. Supported networks are: mtn, at, big-time",
+    })
+  }
+
+  // Validate phone number format
+  if (!/^\d{10}$/.test(phone)) {
+    return res.status(400).json({
+      status: "error",
+      message: "Invalid phone number format. Please provide a 10-digit phone number.",
+    })
+  }
+
+  try {
+    // Generate a unique reference for this transaction
+    const prefix = network === "mtn" ? "MTN_WALLET" : network === "at" ? "AT_WALLET" : "BT_WALLET"
+    const reference = generateReference(prefix)
+
+    // Prepare Hubnet payload
+    const hubnetPayload = {
+      phone,
+      volume: volume.toString(), // Ensure volume is a string as required by API
+      reference,
+      referrer: phone, // Using customer's phone as referrer to receive completion alerts
+    }
+
+    try {
+      // Process data bundle with Hubnet
+      const hubnetData = await processHubnetTransaction(hubnetPayload, network)
+
+      // Return success response
+      return res.json({
+        status: "success",
+        message: "Transaction completed successfully. Your data bundle has been processed.",
+        data: {
+          reference: reference,
+          amount: Number.parseFloat(amount),
+          phone: phone,
+          volume: volume,
+          network: network,
+          timestamp: Date.now(),
+          transaction_id: hubnetData.transaction_id || hubnetData.data?.transaction_id || "N/A",
+          hubnetResponse: hubnetData,
+        },
+      })
+    } catch (hubnetError) {
+      console.error("Hubnet transaction error:", hubnetError)
+
+      // Check for specific error types
+      if (hubnetError.message === "INSUFFICIENT_HUBNET_BALANCE") {
+        return res.status(503).json({
+          status: "error",
+          errorCode: "INSUFFICIENT_HUBNET_BALANCE",
+          message: "Service provider has insufficient balance. Please try again later.",
+        })
+      }
+
+      // Handle other errors
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to process data bundle. Please try again or contact support.",
+        error: hubnetError.message,
+      })
+    }
+  } catch (error) {
+    console.error("Error in /api/process-wallet-purchase:", error)
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to process purchase. Please try again or contact support.",
+      error: error.message,
+    })
+  }
+})
+
+/**
  * Verify payment and process data bundle
  * Implements a reliable transaction pattern to ensure exactly-once delivery
  */
 app.get("/api/verify-payment/:reference", async (req, res) => {
-  const { reference } = req.params;
+  const { reference } = req.params
 
   if (!reference) {
     return res.status(400).json({
       status: "error",
       message: "Missing payment reference.",
-    });
+    })
   }
 
   // Check if this reference has already been processed
   if (processedTransactions.has(reference)) {
-    console.log(`Reference ${reference} has already been verified and processed`);
-    const metadata = processedTransactions.get(reference);
-    
+    console.log(`Reference ${reference} has already been verified and processed`)
+    const metadata = processedTransactions.get(reference)
+
     // Return the cached result
     return res.json({
       status: "success",
@@ -543,24 +624,42 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         processedAt: metadata.processedAt || new Date().toISOString(),
         hubnetResponse: metadata.hubnetResponse || null,
       },
-    });
+    })
   }
 
   try {
     // Verify payment with Paystack
-    const verifyData = await verifyPaystackPayment(reference);
+    const verifyData = await verifyPaystackPayment(reference)
 
     if (!verifyData.status) {
       return res.json({
         status: "failed",
         message: "Payment verification failed. Please try again.",
-      });
+      })
     }
 
     // Check if payment is successful
     if (verifyData.data.status === "success") {
+      // Check if this is a wallet deposit
+      const paymentType = verifyData.data.metadata?.paymentType || "bundle"
+
+      if (paymentType === "wallet") {
+        // This is a wallet deposit, no need to process with Hubnet
+        return res.json({
+          status: "success",
+          message: "Wallet deposit completed successfully.",
+          data: {
+            reference: verifyData.data.reference,
+            amount: verifyData.data.amount / 100,
+            paymentType: "wallet",
+            timestamp: new Date(verifyData.data.paid_at).getTime(),
+          },
+        })
+      }
+
+      // This is a data bundle purchase
       // Extract metadata from verified payment
-      const { phone, volume, network } = verifyData.data.metadata;
+      const { phone, volume, network } = verifyData.data.metadata
 
       // Prepare Hubnet payload according to documentation
       const hubnetPayload = {
@@ -568,12 +667,12 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         volume: volume.toString(), // Ensure volume is a string as required by API
         reference,
         referrer: phone, // Using customer's phone as referrer to receive completion alerts
-      };
+      }
 
       try {
         // Process data bundle with Hubnet
         // This function now handles duplicate prevention internally
-        const hubnetData = await processHubnetTransaction(hubnetPayload, network);
+        const hubnetData = await processHubnetTransaction(hubnetPayload, network)
 
         // Return success response
         return res.json({
@@ -589,13 +688,13 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
             transaction_id: hubnetData.transaction_id || hubnetData.data?.transaction_id || "N/A",
             hubnetResponse: hubnetData,
           },
-        });
+        })
       } catch (hubnetError) {
-        console.error("Error processing Hubnet transaction:", hubnetError);
+        console.error("Error processing Hubnet transaction:", hubnetError)
 
         // Important: We don't mark the transaction as processed if there was an error
         // This allows for retry attempts
-        
+
         // Even if Hubnet fails, we should acknowledge the payment was successful
         // but mark the order status as pending for the user
         return res.json({
@@ -613,81 +712,81 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
             network: verifyData.data.metadata.network,
             timestamp: new Date(verifyData.data.paid_at).getTime(),
           },
-        });
+        })
       }
     } else if (verifyData.data.status === "pending") {
       return res.json({
         status: "pending",
         paymentStatus: "pending",
         message: "Payment is still being processed. Please check back later.",
-      });
+      })
     } else {
       return res.json({
         status: "failed",
         paymentStatus: "failed",
         message: "Payment failed or was cancelled.",
         data: verifyData.data,
-      });
+      })
     }
   } catch (error) {
-    console.error("Error verifying payment:", error);
+    console.error("Error verifying payment:", error)
     return res.status(500).json({
       status: "error",
       message: "Failed to verify payment. Please try again or contact support.",
       error: error.message,
-    });
+    })
   }
-});
+})
 
 /**
  * Endpoint to manually retry a failed data bundle transaction
  * This can be used by admin or support to resolve issues
  */
 app.post("/api/retry-transaction/:reference", async (req, res) => {
-  const { reference } = req.params;
-  const { network, phone, volume } = req.body;
-  
+  const { reference } = req.params
+  const { network, phone, volume } = req.body
+
   if (!reference || !network || !phone || !volume) {
     return res.status(400).json({
       status: "error",
       message: "Missing required parameters. Please provide reference, network, phone, and volume.",
-    });
+    })
   }
-  
+
   try {
     // Verify the payment first to ensure it was successful
-    const verifyData = await verifyPaystackPayment(reference);
-    
+    const verifyData = await verifyPaystackPayment(reference)
+
     if (!verifyData.status || verifyData.data.status !== "success") {
       return res.status(400).json({
         status: "error",
         message: "Cannot retry transaction. Original payment was not successful.",
-      });
+      })
     }
-    
+
     // Prepare Hubnet payload
     const hubnetPayload = {
       phone,
       volume: volume.toString(),
       reference,
       referrer: phone,
-    };
-    
+    }
+
     // Force retry by temporarily removing from processed transactions if it exists
-    let existingData = null;
+    let existingData = null
     if (processedTransactions.has(reference)) {
-      existingData = processedTransactions.get(reference);
+      existingData = processedTransactions.get(reference)
       // We'll keep the record but mark it for retry
       processedTransactions.add(reference, {
         ...existingData,
         retryAttempted: true,
-        retryTimestamp: Date.now()
-      });
+        retryTimestamp: Date.now(),
+      })
     }
-    
+
     // Process the data bundle
-    const hubnetData = await processHubnetTransaction(hubnetPayload, network);
-    
+    const hubnetData = await processHubnetTransaction(hubnetPayload, network)
+
     return res.json({
       status: "success",
       message: "Transaction retry completed successfully.",
@@ -699,38 +798,38 @@ app.post("/api/retry-transaction/:reference", async (req, res) => {
         timestamp: Date.now(),
         transaction_id: hubnetData.transaction_id || hubnetData.data?.transaction_id || "N/A",
         hubnetResponse: hubnetData,
-        previousAttempt: existingData ? true : false
+        previousAttempt: existingData ? true : false,
       },
-    });
+    })
   } catch (error) {
-    console.error("Error retrying transaction:", error);
+    console.error("Error retrying transaction:", error)
     return res.status(500).json({
       status: "error",
       message: "Failed to retry transaction. Please try again or contact support.",
       error: error.message,
-    });
+    })
   }
-});
+})
 
 /**
  * Endpoint to check transaction status
  * This can be used by clients to check if a transaction has been processed
  */
 app.get("/api/transaction-status/:reference", async (req, res) => {
-  const { reference } = req.params;
-  
+  const { reference } = req.params
+
   if (!reference) {
     return res.status(400).json({
       status: "error",
       message: "Missing transaction reference.",
-    });
+    })
   }
-  
+
   try {
     // Check if the transaction has been processed
     if (processedTransactions.has(reference)) {
-      const metadata = processedTransactions.get(reference);
-      
+      const metadata = processedTransactions.get(reference)
+
       return res.json({
         status: "success",
         message: "Transaction status retrieved successfully.",
@@ -738,14 +837,14 @@ app.get("/api/transaction-status/:reference", async (req, res) => {
           reference,
           processed: true,
           processedAt: metadata.processedAt || new Date(metadata.timestamp).toISOString(),
-          details: metadata
+          details: metadata,
         },
-      });
+      })
     } else {
       // If not processed, check with Paystack to see if payment was successful
       try {
-        const verifyData = await verifyPaystackPayment(reference);
-        
+        const verifyData = await verifyPaystackPayment(reference)
+
         if (verifyData.status && verifyData.data.status === "success") {
           return res.json({
             status: "pending",
@@ -759,10 +858,10 @@ app.get("/api/transaction-status/:reference", async (req, res) => {
                 phone: verifyData.data.metadata?.phone,
                 volume: verifyData.data.metadata?.volume,
                 network: verifyData.data.metadata?.network,
-                paidAt: verifyData.data.paid_at
-              }
+                paidAt: verifyData.data.paid_at,
+              },
             },
-          });
+          })
         } else {
           return res.json({
             status: "pending",
@@ -772,30 +871,30 @@ app.get("/api/transaction-status/:reference", async (req, res) => {
               processed: false,
               paymentStatus: verifyData.data.status,
             },
-          });
+          })
         }
       } catch (paymentError) {
-        console.error("Error verifying payment for transaction status:", paymentError);
+        console.error("Error verifying payment for transaction status:", paymentError)
         return res.json({
           status: "unknown",
           message: "Transaction reference not found or error checking payment status.",
           data: {
             reference,
             processed: false,
-            error: paymentError.message
+            error: paymentError.message,
           },
-        });
+        })
       }
     }
   } catch (error) {
-    console.error("Error checking transaction status:", error);
+    console.error("Error checking transaction status:", error)
     return res.status(500).json({
       status: "error",
       message: "Failed to check transaction status. Please try again.",
       error: error.message,
-    });
+    })
   }
-});
+})
 
 /**
  * Global error handler
@@ -810,11 +909,14 @@ app.use((err, req, res, next) => {
 })
 
 // Periodic cleanup of old transaction records (run once a day)
-setInterval(() => {
-  const maxAgeMs = 90 * 24 * 60 * 60 * 1000; // 90 days
-  const cleanedCount = processedTransactions.cleanup(maxAgeMs);
-  console.log(`Scheduled cleanup: removed ${cleanedCount} transaction records older than 90 days`);
-}, 24 * 60 * 60 * 1000); // Run every 24 hours
+setInterval(
+  () => {
+    const maxAgeMs = 90 * 24 * 60 * 60 * 1000 // 90 days
+    const cleanedCount = processedTransactions.cleanup(maxAgeMs)
+    console.log(`Scheduled cleanup: removed ${cleanedCount} transaction records older than 90 days`)
+  },
+  24 * 60 * 60 * 1000,
+) // Run every 24 hours
 
 // Start the server
 app.listen(port, () => {
