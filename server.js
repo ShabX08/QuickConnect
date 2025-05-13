@@ -6,37 +6,49 @@ import path from "path"
 import crypto from "crypto"
 import fs from "fs"
 
+// Load environment variables
 dotenv.config()
 
+// Set up directory paths for ES modules
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+// Initialize Express app
 const app = express()
 const port = process.env.PORT || 3000
+
+// Determine URLs based on environment
 const FRONTEND_URL = process.env.FRONTEND_URL || `http://localhost:${port}`
 const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 
+// Middleware setup
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // Create public directory if it doesn't exist
 const publicDir = path.join(__dirname, "public")
 if (!fs.existsSync(publicDir)) {
-  fs.mkdirSync(publicDir, { recursive: true })
+  try {
+    fs.mkdirSync(publicDir, { recursive: true })
+    console.log("Created public directory successfully")
+  } catch (err) {
+    console.error("Error creating public directory:", err)
+    // Continue execution even if directory creation fails
+  }
 }
 
 // Serve static files from the public directory
 app.use(express.static(publicDir))
 
-// Required API keys
-const HUBNET_API_KEY = process.env.HUBNET_API_KEY
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
+// Required API keys with fallbacks for testing
+const HUBNET_API_KEY = process.env.HUBNET_API_KEY || ""
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || ""
 
 // Validate required environment variables
 if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY) {
-  console.error("Missing required environment variables. Please check your .env file.")
-  console.error("HUBNET_API_KEY:", Boolean(HUBNET_API_KEY))
-  console.error("PAYSTACK_SECRET_KEY:", Boolean(PAYSTACK_SECRET_KEY))
+  console.warn("Missing required environment variables. Some features may not work correctly.")
+  console.warn("HUBNET_API_KEY:", Boolean(HUBNET_API_KEY))
+  console.warn("PAYSTACK_SECRET_KEY:", Boolean(PAYSTACK_SECRET_KEY))
 }
 
 // Create a persistent store for processed references
@@ -64,11 +76,18 @@ class TransactionStore {
 
   save() {
     try {
+      // Create directory if it doesn't exist
+      const dir = path.dirname(this._filePath)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+      
       // Convert Map to object for JSON serialization
       const data = Object.fromEntries(this._store)
       fs.writeFileSync(this._filePath, JSON.stringify(data, null, 2))
     } catch (error) {
       console.error("Error saving transaction store:", error)
+      // Continue execution even if save fails
     }
   }
 
@@ -120,7 +139,29 @@ class TransactionStore {
 }
 
 // Initialize the transaction store
-const processedTransactions = new TransactionStore()
+let processedTransactions
+try {
+  processedTransactions = new TransactionStore()
+} catch (error) {
+  console.error("Error initializing transaction store:", error)
+  // Fallback to in-memory only store if file operations fail
+  processedTransactions = {
+    _store: new Map(),
+    has: function(reference) { return this._store.has(reference) },
+    add: function(reference, metadata = {}) { 
+      this._store.set(reference, { timestamp: Date.now(), ...metadata })
+      return this
+    },
+    get: function(reference) { return this._store.get(reference) },
+    getAll: function() { 
+      return Array.from(this._store.entries()).map(([reference, metadata]) => ({
+        reference,
+        ...metadata,
+      }))
+    },
+    cleanup: function() { return 0 }
+  }
+}
 
 /**
  * Generate a unique transaction reference
@@ -128,7 +169,7 @@ const processedTransactions = new TransactionStore()
  * @returns {string} Unique reference ID
  */
 function generateReference(prefix = "DATA") {
-  return `${prefix}_${crypto.randomBytes(8).toString("hex")}`
+  return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`
 }
 
 /**
@@ -149,13 +190,21 @@ async function initializePaystackPayment(payload) {
       body: JSON.stringify(payload),
     })
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Paystack error response:", errorData)
-      throw new Error(`Paystack error: ${errorData.message || response.statusText}`)
+    // Handle non-JSON responses
+    const contentType = response.headers.get("content-type")
+    if (!contentType || !contentType.includes("application/json")) {
+      const textResponse = await response.text()
+      console.error("Paystack returned non-JSON response:", textResponse)
+      throw new Error(`Paystack returned non-JSON response. Status: ${response.status}`)
     }
 
     const data = await response.json()
+
+    if (!response.ok) {
+      console.error("Paystack error response:", data)
+      throw new Error(`Paystack error: ${data.message || response.statusText}`)
+    }
+
     console.log("Paystack initialization successful:", data)
     return data
   } catch (error) {
@@ -173,20 +222,28 @@ async function verifyPaystackPayment(reference) {
   try {
     console.log(`Verifying Paystack payment with reference: ${reference}`)
 
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
         "Cache-Control": "no-cache",
       },
     })
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Paystack verification error:", errorData)
-      throw new Error(`Paystack verification error: ${errorData.message || response.statusText}`)
+    // Handle non-JSON responses
+    const contentType = response.headers.get("content-type")
+    if (!contentType || !contentType.includes("application/json")) {
+      const textResponse = await response.text()
+      console.error("Paystack verification returned non-JSON response:", textResponse)
+      throw new Error(`Paystack verification returned non-JSON response. Status: ${response.status}`)
     }
 
     const data = await response.json()
+
+    if (!response.ok) {
+      console.error("Paystack verification error:", data)
+      throw new Error(`Paystack verification error: ${data.message || response.statusText}`)
+    }
+
     console.log("Paystack verification result:", data)
     return data
   } catch (error) {
@@ -371,6 +428,14 @@ app.get("/health", (req, res) => {
     status: "ok",
     message: "Server is running",
     timestamp: new Date().toISOString(),
+    env: {
+      NODE_ENV: process.env.NODE_ENV || 'development',
+      PORT: port,
+      FRONTEND_URL: FRONTEND_URL,
+      BASE_URL: BASE_URL,
+      HUBNET_API_KEY: Boolean(HUBNET_API_KEY),
+      PAYSTACK_SECRET_KEY: Boolean(PAYSTACK_SECRET_KEY)
+    }
   })
 })
 
@@ -402,7 +467,7 @@ app.get("/api/check-balance", async (req, res) => {
  * Starts the payment process with Paystack for data bundle purchase or wallet deposit
  */
 app.post("/api/initiate-payment", async (req, res) => {
-  const { network, phone, volume, amount, email, fcmToken, paymentType } = req.body
+  const { network, phone, volume, amount, email, fcmToken, paymentType, reference } = req.body
 
   // Validate required fields based on payment type
   if (paymentType === "wallet") {
@@ -440,14 +505,17 @@ app.post("/api/initiate-payment", async (req, res) => {
   }
 
   try {
-    // Generate a unique reference for this transaction
-    let prefix = "PAYMENT"
-    if (paymentType === "wallet") {
-      prefix = "WALLET_DEPOSIT"
-    } else {
-      prefix = network === "mtn" ? "MTN_DATA" : network === "at" ? "AT_DATA" : "BT_DATA"
+    // Generate a unique reference for this transaction or use provided one
+    let transactionReference = reference;
+    if (!transactionReference) {
+      let prefix = "PAYMENT"
+      if (paymentType === "wallet") {
+        prefix = "WALLET_DEPOSIT"
+      } else {
+        prefix = network === "mtn" ? "MTN_DATA" : network === "at" ? "AT_DATA" : "BT_DATA"
+      }
+      transactionReference = generateReference(prefix)
     }
-    const reference = generateReference(prefix)
 
     // Convert amount to kobo (Paystack uses the smallest currency unit)
     const amountInKobo = Math.round(amount * 100)
@@ -456,7 +524,7 @@ app.post("/api/initiate-payment", async (req, res) => {
     const payload = {
       amount: amountInKobo,
       email,
-      reference,
+      reference: transactionReference,
       callback_url: `${FRONTEND_URL}`,
       metadata: {
         paymentType: paymentType || "bundle",
@@ -468,7 +536,7 @@ app.post("/api/initiate-payment", async (req, res) => {
             value:
               paymentType === "wallet"
                 ? `₵${amount} Wallet Deposit`
-                : `${volume}MB for ${phone} (${network.toUpperCase()})`,
+                : `${volume}MB for ${phone} (${network?.toUpperCase() || 'Unknown'})`,
           },
         ],
       },
@@ -645,6 +713,13 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
 
       if (paymentType === "wallet") {
         // This is a wallet deposit, no need to process with Hubnet
+        // Mark as processed to prevent duplicate processing
+        processedTransactions.add(reference, {
+          paymentType: "wallet",
+          amount: verifyData.data.amount / 100,
+          processedAt: new Date().toISOString(),
+        })
+        
         return res.json({
           status: "success",
           message: "Wallet deposit completed successfully.",
@@ -659,7 +734,16 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
 
       // This is a data bundle purchase
       // Extract metadata from verified payment
-      const { phone, volume, network } = verifyData.data.metadata
+      const { phone, volume, network } = verifyData.data.metadata || {}
+      
+      // Validate required metadata
+      if (!phone || !volume || !network) {
+        console.error("Missing required metadata in payment:", verifyData.data)
+        return res.status(400).json({
+          status: "error",
+          message: "Payment verification successful but missing required metadata for data bundle processing.",
+        })
+      }
 
       // Prepare Hubnet payload according to documentation
       const hubnetPayload = {
@@ -897,6 +981,16 @@ app.get("/api/transaction-status/:reference", async (req, res) => {
 })
 
 /**
+ * Fallback route for handling 404s
+ */
+app.use((req, res) => {
+  res.status(404).json({
+    status: "error",
+    message: "Endpoint not found",
+  })
+})
+
+/**
  * Global error handler
  */
 app.use((err, req, res, next) => {
@@ -909,14 +1003,31 @@ app.use((err, req, res, next) => {
 })
 
 // Periodic cleanup of old transaction records (run once a day)
-setInterval(
+const cleanupInterval = setInterval(
   () => {
-    const maxAgeMs = 90 * 24 * 60 * 60 * 1000 // 90 days
-    const cleanedCount = processedTransactions.cleanup(maxAgeMs)
-    console.log(`Scheduled cleanup: removed ${cleanedCount} transaction records older than 90 days`)
+    try {
+      const maxAgeMs = 90 * 24 * 60 * 60 * 1000 // 90 days
+      const cleanedCount = processedTransactions.cleanup(maxAgeMs)
+      console.log(`Scheduled cleanup: removed ${cleanedCount} transaction records older than 90 days`)
+    } catch (error) {
+      console.error("Error during scheduled cleanup:", error)
+    }
   },
-  24 * 60 * 60 * 1000,
+  24 * 60 * 60 * 1000
 ) // Run every 24 hours
+
+// Ensure cleanup interval is cleared if the process exits
+process.on('SIGTERM', () => {
+  clearInterval(cleanupInterval)
+  console.log('Cleanup interval cleared on SIGTERM')
+  process.exit(0)
+})
+
+process.on('SIGINT', () => {
+  clearInterval(cleanupInterval)
+  console.log('Cleanup interval cleared on SIGINT')
+  process.exit(0)
+})
 
 // Start the server
 app.listen(port, () => {
@@ -925,3 +1036,6 @@ app.listen(port, () => {
   console.log("🔑 Paystack Secret Key configured:", Boolean(PAYSTACK_SECRET_KEY))
   console.log(`💾 Transaction store initialized with ${processedTransactions.getAll().length} records`)
 })
+
+// Export app for testing purposes
+export default app
