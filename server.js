@@ -5,50 +5,48 @@ import { fileURLToPath } from "url"
 import path from "path"
 import crypto from "crypto"
 import fs from "fs"
+import cors from "cors"
 
-// Load environment variables
 dotenv.config()
 
-// Set up directory paths for ES modules
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Initialize Express app
 const app = express()
 const port = process.env.PORT || 3000
-
-// Determine URLs based on environment
 const FRONTEND_URL = process.env.FRONTEND_URL || `http://localhost:${port}`
 const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 
-// Middleware setup
+// Add CORS middleware to fix cross-origin issues
+app.use(
+  cors({
+    origin: "*", // Allow all origins - you can restrict this to your frontend URL in production
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cache-Control"],
+  }),
+)
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // Create public directory if it doesn't exist
 const publicDir = path.join(__dirname, "public")
 if (!fs.existsSync(publicDir)) {
-  try {
-    fs.mkdirSync(publicDir, { recursive: true })
-    console.log("Created public directory successfully")
-  } catch (err) {
-    console.error("Error creating public directory:", err)
-    // Continue execution even if directory creation fails
-  }
+  fs.mkdirSync(publicDir, { recursive: true })
 }
 
 // Serve static files from the public directory
 app.use(express.static(publicDir))
 
-// Required API keys with fallbacks for testing
-const HUBNET_API_KEY = process.env.HUBNET_API_KEY || ""
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || ""
+// Required API keys
+const HUBNET_API_KEY = process.env.HUBNET_API_KEY
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
 
 // Validate required environment variables
 if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY) {
-  console.warn("Missing required environment variables. Some features may not work correctly.")
-  console.warn("HUBNET_API_KEY:", Boolean(HUBNET_API_KEY))
-  console.warn("PAYSTACK_SECRET_KEY:", Boolean(PAYSTACK_SECRET_KEY))
+  console.error("Missing required environment variables. Please check your .env file.")
+  console.error("HUBNET_API_KEY:", Boolean(HUBNET_API_KEY))
+  console.error("PAYSTACK_SECRET_KEY:", Boolean(PAYSTACK_SECRET_KEY))
 }
 
 // Create a persistent store for processed references
@@ -76,18 +74,11 @@ class TransactionStore {
 
   save() {
     try {
-      // Create directory if it doesn't exist
-      const dir = path.dirname(this._filePath)
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true })
-      }
-      
       // Convert Map to object for JSON serialization
       const data = Object.fromEntries(this._store)
       fs.writeFileSync(this._filePath, JSON.stringify(data, null, 2))
     } catch (error) {
       console.error("Error saving transaction store:", error)
-      // Continue execution even if save fails
     }
   }
 
@@ -139,29 +130,7 @@ class TransactionStore {
 }
 
 // Initialize the transaction store
-let processedTransactions
-try {
-  processedTransactions = new TransactionStore()
-} catch (error) {
-  console.error("Error initializing transaction store:", error)
-  // Fallback to in-memory only store if file operations fail
-  processedTransactions = {
-    _store: new Map(),
-    has: function(reference) { return this._store.has(reference) },
-    add: function(reference, metadata = {}) { 
-      this._store.set(reference, { timestamp: Date.now(), ...metadata })
-      return this
-    },
-    get: function(reference) { return this._store.get(reference) },
-    getAll: function() { 
-      return Array.from(this._store.entries()).map(([reference, metadata]) => ({
-        reference,
-        ...metadata,
-      }))
-    },
-    cleanup: function() { return 0 }
-  }
-}
+const processedTransactions = new TransactionStore()
 
 /**
  * Generate a unique transaction reference
@@ -169,136 +138,209 @@ try {
  * @returns {string} Unique reference ID
  */
 function generateReference(prefix = "DATA") {
-  return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`
+  return `${prefix}_${crypto.randomBytes(8).toString("hex")}`
 }
 
 /**
- * Initialize Paystack payment
+ * Initialize Paystack payment with improved error handling and retries
  * @param {Object} payload - Payment payload
  * @returns {Promise<Object>} Paystack response
  */
 async function initializePaystackPayment(payload) {
-  try {
-    console.log("Initializing Paystack payment with payload:", JSON.stringify(payload))
+  let retries = 0
+  const maxRetries = 3
+  const baseDelay = 1000 // 1 second base delay
 
-    const response = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-      },
-      body: JSON.stringify(payload),
-    })
+  while (retries <= maxRetries) {
+    try {
+      console.log("Initializing Paystack payment with payload:", JSON.stringify(payload))
 
-    // Handle non-JSON responses
-    const contentType = response.headers.get("content-type")
-    if (!contentType || !contentType.includes("application/json")) {
-      const textResponse = await response.text()
-      console.error("Paystack returned non-JSON response:", textResponse)
-      throw new Error(`Paystack returned non-JSON response. Status: ${response.status}`)
+      // Set up timeout with AbortController
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+
+      const response = await fetch("https://api.paystack.co/transaction/initialize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("Paystack error response:", errorData)
+        throw new Error(`Paystack error: ${errorData.message || response.statusText}`)
+      }
+
+      const data = await response.json()
+      console.log("Paystack initialization successful:", data)
+      return data
+    } catch (error) {
+      retries++
+
+      // Check if it's a timeout error
+      if (error.name === "AbortError") {
+        console.error(`Paystack request timed out (attempt ${retries}/${maxRetries})`)
+      } else {
+        console.error(`Error initializing Paystack payment (attempt ${retries}/${maxRetries}):`, error)
+      }
+
+      // If we've reached max retries, throw the error
+      if (retries > maxRetries) {
+        throw error
+      }
+
+      // Exponential backoff with jitter
+      const delay = baseDelay * Math.pow(2, retries - 1) * (0.9 + Math.random() * 0.2)
+      console.log(`Retrying in ${Math.round(delay)}ms...`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      console.error("Paystack error response:", data)
-      throw new Error(`Paystack error: ${data.message || response.statusText}`)
-    }
-
-    console.log("Paystack initialization successful:", data)
-    return data
-  } catch (error) {
-    console.error("Error initializing Paystack payment:", error)
-    throw error
   }
 }
 
 /**
- * Verify Paystack payment
+ * Verify Paystack payment with improved error handling and retries
  * @param {string} reference - Payment reference
  * @returns {Promise<Object>} Verification response
  */
 async function verifyPaystackPayment(reference) {
-  try {
-    console.log(`Verifying Paystack payment with reference: ${reference}`)
+  let retries = 0
+  const maxRetries = 3
+  const baseDelay = 1000 // 1 second base delay
 
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        "Cache-Control": "no-cache",
-      },
-    })
+  while (retries <= maxRetries) {
+    try {
+      console.log(`Verifying Paystack payment with reference: ${reference}`)
 
-    // Handle non-JSON responses
-    const contentType = response.headers.get("content-type")
-    if (!contentType || !contentType.includes("application/json")) {
-      const textResponse = await response.text()
-      console.error("Paystack verification returned non-JSON response:", textResponse)
-      throw new Error(`Paystack verification returned non-JSON response. Status: ${response.status}`)
+      // Set up timeout with AbortController
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+
+      const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          "Cache-Control": "no-cache",
+        },
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("Paystack verification error:", errorData)
+        throw new Error(`Paystack verification error: ${errorData.message || response.statusText}`)
+      }
+
+      const data = await response.json()
+      console.log("Paystack verification result:", data)
+      return data
+    } catch (error) {
+      retries++
+
+      // Check if it's a timeout error
+      if (error.name === "AbortError") {
+        console.error(`Paystack verification request timed out (attempt ${retries}/${maxRetries})`)
+      } else {
+        console.error(`Error verifying Paystack payment (attempt ${retries}/${maxRetries}):`, error)
+      }
+
+      // If we've reached max retries, throw the error
+      if (retries > maxRetries) {
+        throw error
+      }
+
+      // Exponential backoff with jitter
+      const delay = baseDelay * Math.pow(2, retries - 1) * (0.9 + Math.random() * 0.2)
+      console.log(`Retrying in ${Math.round(delay)}ms...`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      console.error("Paystack verification error:", data)
-      throw new Error(`Paystack verification error: ${data.message || response.statusText}`)
-    }
-
-    console.log("Paystack verification result:", data)
-    return data
-  } catch (error) {
-    console.error("Error verifying Paystack payment:", error)
-    throw error
   }
 }
 
 /**
- * Check Hubnet account balance
+ * Check Hubnet account balance with improved error handling and retries
  * @returns {Promise<Object>} Balance information
  */
 async function checkHubnetBalance() {
-  try {
-    console.log("Checking Hubnet account balance")
+  let retries = 0
+  const maxRetries = 3
+  const baseDelay = 1000 // 1 second base delay
 
-    const response = await fetch("https://console.hubnet.app/live/api/context/business/transaction/check_balance", {
-      method: "GET",
-      headers: {
-        token: `Bearer ${HUBNET_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    })
-
-    // Log the raw response for debugging
-    console.log(`Hubnet balance check response status: ${response.status}`)
-    
-    // Get the response as text first
-    const responseText = await response.text()
-    console.log(`Hubnet balance check raw response:`, responseText)
-
-    // Try to parse the response as JSON
-    let data
+  while (retries <= maxRetries) {
     try {
-      data = JSON.parse(responseText)
-    } catch (e) {
-      console.error("Error parsing Hubnet balance response:", e)
-      throw new Error(`Hubnet balance check returned invalid JSON. Status code: ${response.status}, Response: ${responseText}`)
-    }
+      console.log("Checking Hubnet account balance")
 
-    if (!response.ok) {
-      console.error("Hubnet balance check error response:", data)
-      const errorMessage = data.message || data.reason || response.statusText
-      throw new Error(`Hubnet balance check error: ${errorMessage}. Status code: ${response.status}`)
-    }
+      // Set up timeout with AbortController
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
 
-    return data
-  } catch (error) {
-    console.error("Error checking Hubnet balance:", error)
-    throw error
+      const response = await fetch("https://console.hubnet.app/live/api/context/business/transaction/check_balance", {
+        method: "GET",
+        headers: {
+          token: `Bearer ${HUBNET_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      // Log the raw response for debugging
+      console.log(`Hubnet balance check response status: ${response.status}`)
+
+      // Get the response as text first
+      const responseText = await response.text()
+      console.log(`Hubnet balance check raw response:`, responseText)
+
+      // Try to parse the response as JSON
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch (e) {
+        console.error("Error parsing Hubnet balance response:", e)
+        throw new Error(
+          `Hubnet balance check returned invalid JSON. Status code: ${response.status}, Response: ${responseText}`,
+        )
+      }
+
+      if (!response.ok) {
+        console.error("Hubnet balance check error response:", data)
+        const errorMessage = data.message || data.reason || response.statusText
+        throw new Error(`Hubnet balance check error: ${errorMessage}. Status code: ${response.status}`)
+      }
+
+      return data
+    } catch (error) {
+      retries++
+
+      // Check if it's a timeout error
+      if (error.name === "AbortError") {
+        console.error(`Hubnet balance check request timed out (attempt ${retries}/${maxRetries})`)
+      } else {
+        console.error(`Error checking Hubnet balance (attempt ${retries}/${maxRetries}):`, error)
+      }
+
+      // If we've reached max retries, throw the error
+      if (retries > maxRetries) {
+        throw error
+      }
+
+      // Exponential backoff with jitter
+      const delay = baseDelay * Math.pow(2, retries - 1) * (0.9 + Math.random() * 0.2)
+      console.log(`Retrying in ${Math.round(delay)}ms...`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
   }
 }
 
 /**
- * Process Hubnet transaction for data bundle
+ * Process Hubnet transaction for data bundle with improved error handling and retries
  * @param {Object} payload - Transaction payload
  * @param {string} network - Network code (mtn, at, big-time)
  * @returns {Promise<Object>} Hubnet response
@@ -353,61 +395,101 @@ async function processHubnetTransaction(payload, network) {
     const apiUrl = `https://console.hubnet.app/live/api/context/business/transaction/${network}-new-transaction`
     console.log(`Sending request to: ${apiUrl}`)
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        token: `Bearer ${HUBNET_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
+    // Implement retry logic
+    let retries = 0
+    const maxRetries = 3
+    const baseDelay = 1000 // 1 second base delay
 
-    // Log the raw response for debugging
-    console.log(`Hubnet API response status: ${response.status}`)
-    
-    // Get the response as text first
-    const responseText = await response.text()
-    console.log(`Hubnet API raw response:`, responseText)
+    while (retries <= maxRetries) {
+      try {
+        // Set up timeout with AbortController
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout for Hubnet
 
-    // Try to parse the response as JSON
-    let data
-    try {
-      data = JSON.parse(responseText)
-    } catch (e) {
-      console.error("Error parsing Hubnet response:", e)
-      throw new Error(`Hubnet API returned invalid JSON. Status code: ${response.status}, Response: ${responseText}`)
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            token: `Bearer ${HUBNET_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
+
+        // Log the raw response for debugging
+        console.log(`Hubnet API response status: ${response.status}`)
+
+        // Get the response as text first
+        const responseText = await response.text()
+        console.log(`Hubnet API raw response:`, responseText)
+
+        // Try to parse the response as JSON
+        let data
+        try {
+          data = JSON.parse(responseText)
+        } catch (e) {
+          console.error("Error parsing Hubnet response:", e)
+          throw new Error(
+            `Hubnet API returned invalid JSON. Status code: ${response.status}, Response: ${responseText}`,
+          )
+        }
+
+        // Check for insufficient balance error
+        if (
+          data.event === "charge.rejected" &&
+          data.status === "failed" &&
+          data.message &&
+          data.message.includes("insufficient")
+        ) {
+          console.error("Hubnet account has insufficient balance:", data)
+          throw new Error("INSUFFICIENT_HUBNET_BALANCE")
+        }
+
+        // Check for other errors
+        if (!response.ok || data.status === "failed") {
+          console.error("Hubnet API error response:", data)
+          const errorMessage = data.message || data.reason || response.statusText
+          throw new Error(`Hubnet API error: ${errorMessage}. Status code: ${response.status}`)
+        }
+
+        console.log("Hubnet transaction result:", data)
+
+        // Mark this reference as processed with the response data for future reference
+        processedTransactions.add(payload.reference, {
+          network,
+          phone: payload.phone,
+          volume: payload.volume,
+          hubnetResponse: data,
+          processedAt: new Date().toISOString(),
+        })
+
+        return data
+      } catch (error) {
+        retries++
+
+        // Check if it's a timeout error
+        if (error.name === "AbortError") {
+          console.error(`Hubnet transaction request timed out (attempt ${retries}/${maxRetries})`)
+        } else if (error.message === "INSUFFICIENT_HUBNET_BALANCE") {
+          // Don't retry if it's an insufficient balance error
+          throw error
+        } else {
+          console.error(`Error processing Hubnet transaction (attempt ${retries}/${maxRetries}):`, error)
+        }
+
+        // If we've reached max retries, throw the error
+        if (retries > maxRetries) {
+          throw error
+        }
+
+        // Exponential backoff with jitter
+        const delay = baseDelay * Math.pow(2, retries - 1) * (0.9 + Math.random() * 0.2)
+        console.log(`Retrying in ${Math.round(delay)}ms...`)
+        await new Promise((resolve) => setTimeout(resolve, delay))
+      }
     }
-
-    // Check for insufficient balance error
-    if (
-      data.event === "charge.rejected" &&
-      data.status === "failed" &&
-      data.message &&
-      data.message.includes("insufficient")
-    ) {
-      console.error("Hubnet account has insufficient balance:", data)
-      throw new Error("INSUFFICIENT_HUBNET_BALANCE")
-    }
-
-    // Check for other errors
-    if (!response.ok || data.status === "failed") {
-      console.error("Hubnet API error response:", data)
-      const errorMessage = data.message || data.reason || response.statusText
-      throw new Error(`Hubnet API error: ${errorMessage}. Status code: ${response.status}`)
-    }
-
-    console.log("Hubnet transaction result:", data)
-
-    // Mark this reference as processed with the response data for future reference
-    processedTransactions.add(payload.reference, {
-      network,
-      phone: payload.phone,
-      volume: payload.volume,
-      hubnetResponse: data,
-      processedAt: new Date().toISOString(),
-    })
-
-    return data
   } catch (error) {
     console.error("Error processing Hubnet transaction:", error)
 
@@ -428,14 +510,6 @@ app.get("/health", (req, res) => {
     status: "ok",
     message: "Server is running",
     timestamp: new Date().toISOString(),
-    env: {
-      NODE_ENV: process.env.NODE_ENV || 'development',
-      PORT: port,
-      FRONTEND_URL: FRONTEND_URL,
-      BASE_URL: BASE_URL,
-      HUBNET_API_KEY: Boolean(HUBNET_API_KEY),
-      PAYSTACK_SECRET_KEY: Boolean(PAYSTACK_SECRET_KEY)
-    }
   })
 })
 
@@ -467,7 +541,7 @@ app.get("/api/check-balance", async (req, res) => {
  * Starts the payment process with Paystack for data bundle purchase or wallet deposit
  */
 app.post("/api/initiate-payment", async (req, res) => {
-  const { network, phone, volume, amount, email, fcmToken, paymentType, reference } = req.body
+  const { network, phone, volume, amount, email, fcmToken, paymentType } = req.body
 
   // Validate required fields based on payment type
   if (paymentType === "wallet") {
@@ -505,17 +579,14 @@ app.post("/api/initiate-payment", async (req, res) => {
   }
 
   try {
-    // Generate a unique reference for this transaction or use provided one
-    let transactionReference = reference;
-    if (!transactionReference) {
-      let prefix = "PAYMENT"
-      if (paymentType === "wallet") {
-        prefix = "WALLET_DEPOSIT"
-      } else {
-        prefix = network === "mtn" ? "MTN_DATA" : network === "at" ? "AT_DATA" : "BT_DATA"
-      }
-      transactionReference = generateReference(prefix)
+    // Generate a unique reference for this transaction
+    let prefix = "PAYMENT"
+    if (paymentType === "wallet") {
+      prefix = "WALLET_DEPOSIT"
+    } else {
+      prefix = network === "mtn" ? "MTN_DATA" : network === "at" ? "AT_DATA" : "BT_DATA"
     }
+    const reference = generateReference(prefix)
 
     // Convert amount to kobo (Paystack uses the smallest currency unit)
     const amountInKobo = Math.round(amount * 100)
@@ -524,7 +595,7 @@ app.post("/api/initiate-payment", async (req, res) => {
     const payload = {
       amount: amountInKobo,
       email,
-      reference: transactionReference,
+      reference,
       callback_url: `${FRONTEND_URL}`,
       metadata: {
         paymentType: paymentType || "bundle",
@@ -536,7 +607,7 @@ app.post("/api/initiate-payment", async (req, res) => {
             value:
               paymentType === "wallet"
                 ? `₵${amount} Wallet Deposit`
-                : `${volume}MB for ${phone} (${network?.toUpperCase() || 'Unknown'})`,
+                : `${volume}MB for ${phone} (${network.toUpperCase()})`,
           },
         ],
       },
@@ -713,13 +784,6 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
 
       if (paymentType === "wallet") {
         // This is a wallet deposit, no need to process with Hubnet
-        // Mark as processed to prevent duplicate processing
-        processedTransactions.add(reference, {
-          paymentType: "wallet",
-          amount: verifyData.data.amount / 100,
-          processedAt: new Date().toISOString(),
-        })
-        
         return res.json({
           status: "success",
           message: "Wallet deposit completed successfully.",
@@ -734,16 +798,7 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
 
       // This is a data bundle purchase
       // Extract metadata from verified payment
-      const { phone, volume, network } = verifyData.data.metadata || {}
-      
-      // Validate required metadata
-      if (!phone || !volume || !network) {
-        console.error("Missing required metadata in payment:", verifyData.data)
-        return res.status(400).json({
-          status: "error",
-          message: "Payment verification successful but missing required metadata for data bundle processing.",
-        })
-      }
+      const { phone, volume, network } = verifyData.data.metadata
 
       // Prepare Hubnet payload according to documentation
       const hubnetPayload = {
@@ -981,16 +1036,6 @@ app.get("/api/transaction-status/:reference", async (req, res) => {
 })
 
 /**
- * Fallback route for handling 404s
- */
-app.use((req, res) => {
-  res.status(404).json({
-    status: "error",
-    message: "Endpoint not found",
-  })
-})
-
-/**
  * Global error handler
  */
 app.use((err, req, res, next) => {
@@ -1003,31 +1048,14 @@ app.use((err, req, res, next) => {
 })
 
 // Periodic cleanup of old transaction records (run once a day)
-const cleanupInterval = setInterval(
+setInterval(
   () => {
-    try {
-      const maxAgeMs = 90 * 24 * 60 * 60 * 1000 // 90 days
-      const cleanedCount = processedTransactions.cleanup(maxAgeMs)
-      console.log(`Scheduled cleanup: removed ${cleanedCount} transaction records older than 90 days`)
-    } catch (error) {
-      console.error("Error during scheduled cleanup:", error)
-    }
+    const maxAgeMs = 90 * 24 * 60 * 60 * 1000 // 90 days
+    const cleanedCount = processedTransactions.cleanup(maxAgeMs)
+    console.log(`Scheduled cleanup: removed ${cleanedCount} transaction records older than 90 days`)
   },
-  24 * 60 * 60 * 1000
+  24 * 60 * 60 * 1000,
 ) // Run every 24 hours
-
-// Ensure cleanup interval is cleared if the process exits
-process.on('SIGTERM', () => {
-  clearInterval(cleanupInterval)
-  console.log('Cleanup interval cleared on SIGTERM')
-  process.exit(0)
-})
-
-process.on('SIGINT', () => {
-  clearInterval(cleanupInterval)
-  console.log('Cleanup interval cleared on SIGINT')
-  process.exit(0)
-})
 
 // Start the server
 app.listen(port, () => {
@@ -1036,6 +1064,3 @@ app.listen(port, () => {
   console.log("🔑 Paystack Secret Key configured:", Boolean(PAYSTACK_SECRET_KEY))
   console.log(`💾 Transaction store initialized with ${processedTransactions.getAll().length} records`)
 })
-
-// Export app for testing purposes
-export default app
