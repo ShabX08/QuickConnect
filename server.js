@@ -1,5 +1,4 @@
 import express from "express"
-import fetch from "node-fetch"
 import dotenv from "dotenv"
 import { fileURLToPath } from "url"
 import path from "path"
@@ -385,6 +384,7 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     memoryUsage: process.memoryUsage(),
+    nodeVersion: process.version
   })
 })
 
@@ -867,6 +867,7 @@ process.on('SIGINT', () => {
 
 const server = app.listen(port, () => {
   console.log(`🚀 Server running at ${BASE_URL}`)
+  console.log(`🔧 Node.js version: ${process.version}`)
   console.log("🔑 Hubnet API Key configured:", Boolean(HUBNET_API_KEY))
   console.log("🔑 Paystack Secret Key configured:", Boolean(PAYSTACK_SECRET_KEY))
   console.log(`💾 Transaction store initialized with ${processedTransactions.getAll().length} records`)
