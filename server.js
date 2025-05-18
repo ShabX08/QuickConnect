@@ -6,39 +6,26 @@ import path from "path"
 import crypto from "crypto"
 import fs from "fs"
 import cors from "cors"
-import compression from "compression"
-import helmet from "helmet"
 
-// Load environment variables
 dotenv.config()
 
-// Setup file paths
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Server configuration
 const app = express()
 const port = process.env.PORT || 3000
 const FRONTEND_URL = process.env.FRONTEND_URL || `http://localhost:${port}`
 const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`
 
-// API keys
 const HUBNET_API_KEY = process.env.HUBNET_API_KEY
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
 
-// Validate required environment variables
 if (!HUBNET_API_KEY || !PAYSTACK_SECRET_KEY) {
   console.error("Missing required environment variables. Please check your .env file.")
   console.error("HUBNET_API_KEY:", Boolean(HUBNET_API_KEY))
   console.error("PAYSTACK_SECRET_KEY:", Boolean(PAYSTACK_SECRET_KEY))
 }
 
-// Middleware setup
-app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP to avoid issues with external scripts
-  crossOriginEmbedderPolicy: false // Allow loading resources from different origins
-}))
-app.use(compression()) // Compress responses
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -47,15 +34,13 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: true, limit: '1mb' }))
 
-// Setup static files directory
 const publicDir = path.join(__dirname, "public")
 if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true })
 app.use(express.static(publicDir, {
-  maxAge: '1d', // Cache static files for 1 day
+  maxAge: '1d',
   etag: true
 }))
 
-// Transaction store with improved memory management
 class TransactionStore {
   constructor() {
     this._store = new Map()
@@ -72,9 +57,8 @@ class TransactionStore {
       if (fs.existsSync(this._filePath)) {
         const data = JSON.parse(fs.readFileSync(this._filePath, "utf8"))
         
-        // Convert to Map and filter out old entries during initialization
         const now = Date.now()
-        const maxAgeMs = 30 * 24 * 60 * 60 * 1000 // 30 days
+        const maxAgeMs = 30 * 24 * 60 * 60 * 1000
         
         Object.entries(data).forEach(([key, value]) => {
           if (now - value.timestamp <= maxAgeMs) {
@@ -86,7 +70,6 @@ class TransactionStore {
       }
     } catch (error) {
       console.error("Error loading transaction store:", error)
-      // Create a backup of the corrupted file if it exists
       if (fs.existsSync(this._filePath)) {
         try {
           fs.copyFileSync(this._filePath, `${this._filePath}.backup.${Date.now()}`)
@@ -100,19 +83,17 @@ class TransactionStore {
   }
 
   setupAutoSave() {
-    // Save every 5 minutes or when there are pending changes
     this._saveInterval = setInterval(() => {
       if (this._pendingSave && Date.now() - this._lastSaveTime > 5000) {
         this.save()
       }
-    }, 300000) // 5 minutes
+    }, 300000)
   }
 
   save() {
     try {
       const data = Object.fromEntries(this._store)
       
-      // Write to a temporary file first, then rename to avoid corruption
       const tempFilePath = `${this._filePath}.temp`
       fs.writeFileSync(tempFilePath, JSON.stringify(data, null, 2))
       fs.renameSync(tempFilePath, this._filePath)
@@ -121,14 +102,13 @@ class TransactionStore {
       this._lastSaveTime = Date.now()
     } catch (error) {
       console.error("Error saving transaction store:", error)
-      this._pendingSave = true // Try again later
+      this._pendingSave = true
     }
   }
 
   scheduleSave() {
     this._pendingSave = true
     
-    // If no save has happened in the last 30 seconds, save immediately
     if (Date.now() - this._lastSaveTime > 30000) {
       this.save()
     }
@@ -174,7 +154,6 @@ class TransactionStore {
     return count
   }
   
-  // Clean up resources when the server shuts down
   shutdown() {
     if (this._saveInterval) {
       clearInterval(this._saveInterval)
@@ -188,12 +167,10 @@ class TransactionStore {
 
 const processedTransactions = new TransactionStore()
 
-// Utility functions
 function generateReference(prefix = "DATA") {
   return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`
 }
 
-// Improved fetch with timeout, retry logic, and circuit breaker
 const fetchWithRetry = async (url, options = {}, maxRetries = 3, baseDelay = 1000, timeout = 15000) => {
   let retries = 0
   let lastError = null
@@ -211,7 +188,6 @@ const fetchWithRetry = async (url, options = {}, maxRetries = 3, baseDelay = 100
       const response = await fetch(url, fetchOptions)
       clearTimeout(timeoutId)
       
-      // Handle non-JSON responses gracefully
       const contentType = response.headers.get("content-type")
       let data
       
@@ -241,7 +217,6 @@ const fetchWithRetry = async (url, options = {}, maxRetries = 3, baseDelay = 100
       lastError = error
       retries++
       
-      // Don't retry if it's a client error (4xx)
       if (error.message.includes("Status code: 4")) {
         throw error
       }
@@ -254,7 +229,6 @@ const fetchWithRetry = async (url, options = {}, maxRetries = 3, baseDelay = 100
       
       if (retries > maxRetries) break
       
-      // Exponential backoff with jitter
       const delay = baseDelay * Math.pow(2, retries - 1) * (0.9 + Math.random() * 0.2)
       await new Promise(resolve => setTimeout(resolve, delay))
     }
@@ -263,7 +237,6 @@ const fetchWithRetry = async (url, options = {}, maxRetries = 3, baseDelay = 100
   throw lastError || new Error("Maximum retries exceeded")
 }
 
-// API functions with improved error handling
 async function initializePaystackPayment(payload) {
   try {
     return await fetchWithRetry(
@@ -276,9 +249,9 @@ async function initializePaystackPayment(payload) {
         },
         body: JSON.stringify(payload),
       },
-      3, // maxRetries
-      1000, // baseDelay
-      15000 // timeout
+      3,
+      1000,
+      15000
     )
   } catch (error) {
     console.error("Paystack initialization error:", error)
@@ -296,9 +269,9 @@ async function verifyPaystackPayment(reference) {
           "Cache-Control": "no-cache",
         },
       },
-      3, // maxRetries
-      1000, // baseDelay
-      15000 // timeout
+      3,
+      1000,
+      15000
     )
   } catch (error) {
     console.error("Paystack verification error:", error)
@@ -317,9 +290,9 @@ async function checkHubnetBalance() {
           "Content-Type": "application/json",
         },
       },
-      3, // maxRetries
-      1000, // baseDelay
-      15000 // timeout
+      3,
+      1000,
+      15000
     )
   } catch (error) {
     console.error("Hubnet balance check error:", error)
@@ -329,7 +302,6 @@ async function checkHubnetBalance() {
 
 async function processHubnetTransaction(payload, network) {
   try {
-    // Check if already processed
     if (processedTransactions.has(payload.reference)) {
       const metadata = processedTransactions.get(payload.reference)
       if (metadata && metadata.hubnetResponse) {
@@ -350,7 +322,6 @@ async function processHubnetTransaction(payload, network) {
       }
     }
 
-    // Check balance first to avoid unnecessary API calls
     try {
       const balanceData = await checkHubnetBalance()
       if (!balanceData.status || balanceData.balance < 5) {
@@ -358,7 +329,6 @@ async function processHubnetTransaction(payload, network) {
       }
     } catch (balanceError) {
       if (balanceError.message === "INSUFFICIENT_HUBNET_BALANCE") throw balanceError
-      // If it's just a connection error checking balance, continue with the transaction
       console.warn("Balance check failed, proceeding with transaction:", balanceError.message)
     }
 
@@ -374,12 +344,11 @@ async function processHubnetTransaction(payload, network) {
         },
         body: JSON.stringify(payload),
       },
-      3, // maxRetries
-      1000, // baseDelay
-      30000 // longer timeout for transaction processing
+      3,
+      1000,
+      30000
     )
     
-    // Handle specific error cases
     if (data.event === "charge.rejected" && data.status === "failed" && 
         data.message && data.message.includes("insufficient")) {
       throw new Error("INSUFFICIENT_HUBNET_BALANCE")
@@ -390,7 +359,6 @@ async function processHubnetTransaction(payload, network) {
       throw new Error(`Hubnet API error: ${errorMessage}`)
     }
 
-    // Store successful transaction
     processedTransactions.add(payload.reference, {
       network,
       phone: payload.phone,
@@ -406,7 +374,6 @@ async function processHubnetTransaction(payload, network) {
   }
 }
 
-// API Routes
 app.get("/", (req, res) => {
   res.send("PBM DATA HUB API Server is running")
 })
@@ -442,7 +409,6 @@ app.get("/api/check-balance", async (req, res) => {
 app.post("/api/initiate-payment", async (req, res) => {
   const { network, phone, volume, amount, email, fcmToken, paymentType } = req.body
 
-  // Validate request data
   if (paymentType === "wallet") {
     if (!amount || !email) {
       return res.status(400).json({
@@ -528,7 +494,6 @@ app.post("/api/initiate-payment", async (req, res) => {
 app.post("/api/process-wallet-purchase", async (req, res) => {
   const { userId, network, phone, volume, amount, email, fcmToken } = req.body
 
-  // Validate request data
   if (!userId || !network || !phone || !volume || !amount || !email) {
     return res.status(400).json({
       status: "error",
@@ -615,7 +580,6 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
     })
   }
 
-  // Check if already processed
   if (processedTransactions.has(reference)) {
     const metadata = processedTransactions.get(reference)
     return res.json({
@@ -643,7 +607,6 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
     if (verifyData.data.status === "success") {
       const paymentType = verifyData.data.metadata?.paymentType || "bundle"
 
-      // Handle wallet deposit
       if (paymentType === "wallet") {
         return res.json({
           status: "success",
@@ -657,7 +620,6 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
         })
       }
 
-      // Handle data bundle purchase
       const { phone, volume, network } = verifyData.data.metadata
       const hubnetPayload = {
         phone,
@@ -869,7 +831,6 @@ app.get("/api/transaction-status/:reference", async (req, res) => {
   }
 })
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err.stack)
   res.status(500).json({
@@ -879,13 +840,11 @@ app.use((err, req, res, next) => {
   })
 })
 
-// Cleanup old transactions periodically
 const cleanupInterval = setInterval(() => {
-  const maxAgeMs = 90 * 24 * 60 * 60 * 1000 // 90 days
+  const maxAgeMs = 90 * 24 * 60 * 60 * 1000
   processedTransactions.cleanup(maxAgeMs)
-}, 24 * 60 * 60 * 1000) // Run daily
+}, 24 * 60 * 60 * 1000)
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully')
   clearInterval(cleanupInterval)
@@ -906,7 +865,6 @@ process.on('SIGINT', () => {
   })
 })
 
-// Start the server
 const server = app.listen(port, () => {
   console.log(`🚀 Server running at ${BASE_URL}`)
   console.log("🔑 Hubnet API Key configured:", Boolean(HUBNET_API_KEY))
