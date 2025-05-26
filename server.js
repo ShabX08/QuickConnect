@@ -516,7 +516,7 @@ app.post("/api/process-wallet-purchase", async (req, res) => {
   }
 
   try {
-    const prefix = network === "mtn" ? "MTN_WALLET" : network === "at" ? "AT_WALLET" : "BT_WALLET"
+    const prefix = network === "mtn" ? "MTN_PBM" : network === "at" ? "AT_PBM" : "BT_WALLET"
     const reference = generateReference(prefix)
 
     const hubnetPayload = {
