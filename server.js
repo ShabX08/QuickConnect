@@ -36,6 +36,157 @@ if (!CONFIG.hubnetApiKey || !CONFIG.paystackSecretKey) {
   process.exit(1)
 }
 
+const SECURITY = {
+  jwtSecret: process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex"),
+  signatureTimeout: 30000, // 30 seconds
+  suspiciousUserAgents: [
+    "python",
+    "curl",
+    "wget",
+    "httpie",
+    "postman",
+    "axios",
+    "node-fetch",
+    "superagent",
+    "got",
+    "request",
+    "insomnia",
+    "rest-client",
+    "burp",
+    "selenium",
+    "phantomjs",
+    "puppeteer",
+  ],
+  blockedIPs: new Map(), // Store blocked IPs with timestamp
+  blockDuration: 1 * 60 * 60 * 1000, // 1 hour
+}
+
+const blockBots = (req, res, next) => {
+  // Allow localhost and development mode to bypass
+  if (req.ip === "127.0.0.1" || req.ip === "::1" || CONFIG.nodeEnv === "development") {
+    return next()
+  }
+
+  const userAgent = (req.headers["user-agent"] || "").toLowerCase()
+  const clientIP = req.ip || req.connection.remoteAddress
+
+  // Check if IP is blocked
+  if (SECURITY.blockedIPs.has(clientIP)) {
+    const blockInfo = SECURITY.blockedIPs.get(clientIP)
+    if (Date.now() - blockInfo.timestamp < SECURITY.blockDuration) {
+      console.warn(`🚫 Blocked request from banned IP: ${clientIP}`)
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied. Please contact support if you believe this is an error.",
+        timestamp: new Date().toISOString(),
+      })
+    } else {
+      SECURITY.blockedIPs.delete(clientIP) // Remove expired block
+    }
+  }
+
+  // Check for suspicious user agents
+  if (SECURITY.suspiciousUserAgents.some((agent) => userAgent.includes(agent))) {
+    console.warn(`🤖 Suspicious user-agent detected: ${userAgent} from IP: ${clientIP}`)
+    SECURITY.blockedIPs.set(clientIP, { timestamp: Date.now(), attempts: 1 })
+    return res.status(403).json({
+      status: "error",
+      message: "Automated access is not permitted.",
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  // Check for missing or suspicious headers
+  if (!userAgent || userAgent.length < 5 || !req.headers["accept"]) {
+    console.warn(`⚠️ Missing required headers from IP: ${clientIP}`)
+    return res.status(403).json({
+      status: "error",
+      message: "Invalid request headers.",
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  next()
+}
+
+const verifySignature = (req, res, next) => {
+  // Allow localhost and development mode to bypass
+  if (req.ip === "127.0.0.1" || req.ip === "::1" || CONFIG.nodeEnv === "development") {
+    return next()
+  }
+
+  const timestamp = req.headers["x-request-timestamp"]
+  const signature = req.headers["x-request-signature"]
+  const clientIP = req.ip || req.connection.remoteAddress
+
+  // Skip signature check for non-critical endpoints
+  if (req.path === "/health" || req.path === "/") {
+    return next()
+  }
+
+  // Verify timestamp and signature presence
+  if (!timestamp || !signature) {
+    console.warn(`🔐 Missing security headers from IP: ${clientIP}`)
+    return res.status(401).json({
+      status: "error",
+      message: "Invalid request authentication.",
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  // Check timestamp freshness
+  const requestTime = parseInt(timestamp)
+  if (isNaN(requestTime) || Date.now() - requestTime > SECURITY.signatureTimeout) {
+    console.warn(`⏰ Expired or invalid timestamp from IP: ${clientIP}`)
+    return res.status(401).json({
+      status: "error",
+      message: "Request expired. Please try again.",
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  // Verify signature
+  const payload = JSON.stringify(req.body) + timestamp
+  const expectedSignature = crypto
+    .createHmac("sha256", SECURITY.jwtSecret)
+    .update(payload)
+    .digest("hex")
+
+  if (signature !== expectedSignature) {
+    console.warn(`📝 Invalid signature from IP: ${clientIP}`)
+    const blockInfo = SECURITY.blockedIPs.get(clientIP) || { timestamp: Date.now(), attempts: 0 }
+    blockInfo.attempts++
+
+    if (blockInfo.attempts >= 3) {
+      SECURITY.blockedIPs.set(clientIP, { timestamp: Date.now(), attempts: blockInfo.attempts })
+      return res.status(403).json({
+        status: "error",
+        message: "Access denied due to multiple failed attempts.",
+        timestamp: new Date().toISOString(),
+      })
+    }
+
+    SECURITY.blockedIPs.set(clientIP, blockInfo)
+    return res.status(401).json({
+      status: "error",
+      message: "Invalid request signature.",
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  next()
+}
+
+// Add cleanup interval for blocked IPs
+setInterval(() => {
+  const now = Date.now()
+  for (const [ip, blockInfo] of SECURITY.blockedIPs.entries()) {
+    if (now - blockInfo.timestamp >= SECURITY.blockDuration) {
+      SECURITY.blockedIPs.delete(ip)
+    }
+  }
+}, SECURITY.blockDuration)
+
 const app = express()
 
 app.use(
@@ -59,7 +210,16 @@ app.use(
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "X-Requested-With", "Accept", "Origin"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cache-Control",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+      "X-Request-Signature",
+      "X-Request-Timestamp",
+    ],
     credentials: true,
     maxAge: 86400,
   }),
@@ -602,6 +762,9 @@ async function processHubnetTransaction(payload, network) {
   }
 }
 
+app.use(blockBots)
+app.use(verifySignature)
+
 app.get("/health", (req, res) => {
   const healthStatus = {
     status: "ok",
@@ -961,7 +1124,6 @@ app.get("/api/verify-payment/:reference", async (req, res) => {
             amount: verifyData.data.amount / 100,
             phone: verifyData.data.metadata.phone,
             volume: verifyData.data.metadata.volume,
-            network: verifyData.data.metadata.network,
             timestamp: new Date(verifyData.data.paid_at).getTime(),
             transaction_id: hubnetData.transaction_id || hubnetData.data?.transaction_id || "N/A",
             hubnetResponse: hubnetData,
